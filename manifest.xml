@@ -6,12 +6,11 @@
   <license></license>
   <url>http://</url>
   <logo>http://</logo>
-  <!--
-   To add any dependencies use the depend tag
-  <depend package="dummy-dependency-0" />
-	...
-  <depend package="dummy-dependency-n-1" />
-  <depend package="dummy-dependency-n" />
-  -->
   <depend package="slam/octomap" />
+  <depend package="base/types" />
+  
+  
+   <rosdep name="eigen3" />
+   <rosdep name="boost" />
+ 
 </package>
