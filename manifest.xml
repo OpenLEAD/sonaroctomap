@@ -8,9 +8,6 @@
   <logo>http://</logo>
   <depend package="slam/octomap" />
   <depend package="base/types" />
-  
-  
-   <rosdep name="eigen3" />
-   <rosdep name="boost" />
- 
+  <depend package="eigen3" />
+  <depend package="boost" />
 </package>
