@@ -1,12 +1,9 @@
 #include <stdio.h>
-#include <sonaroctomap/Dummy.hpp>
-#include <sonaroctomap/SonarOcTree.h>
 #include <octomap/math/Utils.h>
-#include "base/samples/sonar_beam.h"
-#include <base/time.h>
-#include <base/samples/rigid_body_state.h>
+#include <base/Time.hpp>
+#include <sonaroctomap/SonarOcTree.hpp>
 
-#include "octomap_wrapper/OctomapWrapper.hpp"
+#include <octomap_wrapper/OctomapWrapper.hpp>
 #include <octomap_wrapper/conversion.hpp>
 
 void print_query_info(octomath::Vector3 query, octomap::OcTreeNode* node) {

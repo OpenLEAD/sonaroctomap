@@ -1,4 +1,4 @@
-#include <sonaroctomap/SonarOcTree.h>
+#include <sonaroctomap/SonarOcTree.hpp>
 #include <octomap/math/Utils.h>
 
 using namespace octomap;

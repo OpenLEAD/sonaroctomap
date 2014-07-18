@@ -1,7 +1,10 @@
+#ifndef SONAR_OCTREE_HPP
+#define SONAR_OCTREE_HPP
+
 #include "octomap/OcTree.h"
 #include <string>
-#include "base/samples/sonar_beam.h"
-#include <base/samples/rigid_body_state.h>
+#include "base/samples/SonarBeam.hpp"
+#include <base/samples/RigidBodyState.hpp>
 
 namespace octomap {
 
@@ -61,3 +64,5 @@ public:
 };
 
 } //end namespace
+
+#endif

@@ -1,6 +1,6 @@
 rock_library(sonaroctomap
     SOURCES SonarOcTree.cpp
-    HEADERS SonarOcTree.h 
+    HEADERS SonarOcTree.hpp
     DEPS_CMAKE octomap)
 
 rock_executable(sonaroctomap_bin Main.cpp
