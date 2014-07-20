@@ -4,7 +4,7 @@
 #include <sonaroctomap/SonarOcTree.hpp>
 
 #include <octomap_wrapper/OctomapWrapper.hpp>
-#include <octomap_wrapper/conversion.hpp>
+#include <octomap_wrapper/Conversion.hpp>
 
 void print_query_info(octomath::Vector3 query, octomap::OcTreeNode* node) {
 	if (node != NULL) {

@@ -7,6 +7,7 @@
   <url>http://</url>
   <logo>http://</logo>
   <depend package="slam/octomap" />
+  <depend package="slam/octomap_wrapper" />
   <depend package="base/types" />
   <depend package="eigen3" />
   <depend package="boost" />
