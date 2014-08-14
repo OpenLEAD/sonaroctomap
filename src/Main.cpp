@@ -54,13 +54,30 @@ void mergeTrees(octomap::OcTree &rootTree,octomap::OcTree &localTree,octomap::po
   
   for (octomap::OcTree::leaf_iterator it = localTree.begin(depthLocal), end = localTree.end(); it != end; ++it)
   {
-        octomap::OcTreeNode* treeNode = localTree.search(it.getKey());
         
 	octomap::point3d localPoint = it.getCoordinate();
 	
 	octomap::point3d rootPoint = offset + localPoint; 
-			
-	rootTree.updateNode(rootPoint.x(),rootPoint.y(),rootPoint.z(),treeNode->getLogOdds(),true);
+	
+	octomap::OcTreeNode* rootNode = rootTree.search(rootPoint);
+	
+        // check occupancy prob:
+        double localProb = it->getOccupancy();
+	double rootProb; 
+	
+	if(!rootNode){
+	  rootProb = -1;
+	  std::cout << "point only in localTree with prob = "<< localProb << std::endl;
+	  rootTree.updateNode(rootPoint.x(),rootPoint.y(),rootPoint.z(),octomap::logodds(localProb),true);
+	}
+	else
+	{
+	  rootProb = rootNode->getOccupancy();
+	  std::cout << "occupancy difference = "<< rootProb << " - " << localProb << " = " << rootProb - localProb << std::endl;
+	  double diffProb = rootProb - localProb;
+	  rootTree.updateNode(rootPoint.x(),rootPoint.y(),rootPoint.z(),octomap::logodds(diffProb),true);
+	}
+	delete rootNode;
   }  
 }
 
@@ -113,7 +130,7 @@ int main(int argc, char** argv) {
 		
 	octomap::SonarOcTree* sonarCube2 = new octomap::SonarOcTree(0.05);
 	octomap::point3d origin2(1.0,0.0,0.0);
-	cubeTreeCreator(*sonarCube2,origin2,0,10);
+	cubeTreeCreator(*sonarCube2,origin2,0.1,10);
 	octomap::OcTree* cube2 = dynamic_cast<octomap::OcTree*>(sonarCube2);
 	
 	octomap::SonarOcTree* sonarCube3 = new octomap::SonarOcTree(0.05);
@@ -123,7 +140,7 @@ int main(int argc, char** argv) {
 	
 	octomap::SonarOcTree* sonarCube4 = new octomap::SonarOcTree(0.05);
 	octomap::point3d origin4(0.0,1.5,0.0);
-	cubeTreeCreator(*sonarCube4,origin4,0,10);
+	cubeTreeCreator(*sonarCube4,origin4,0.1,10);
 	octomap::OcTree* cube4 = dynamic_cast<octomap::OcTree*>(sonarCube4);
 	
 	octomap::point3d zero(0.0,0.0,0.0);
