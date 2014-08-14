@@ -109,9 +109,9 @@ void cubeTreeCreator(octomap::SonarOcTree &tree,octomap::point3d origin, double 
     for (int i = -size; i < size; i++) {
         for (int j = -size; j < size; j++) {
 	    for (int k = -size; k < size; k++) {
-		float x = i*0.049999;
-		float y = j*0.049999;
-		float z = k*0.049999;
+		float x = i*0.05;
+		float y = j*0.05;
+		float z = k*0.05;
 	        octomap::point3d currentPoint(x,y,z);
 		octomap::point3d endpoint = currentPoint + origin;
 		float logOdd = octomap::logodds(prob);
@@ -123,30 +123,35 @@ void cubeTreeCreator(octomap::SonarOcTree &tree,octomap::point3d origin, double 
 
 int main(int argc, char** argv) {
         
-	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.05);
-	octomap::point3d origin1(-0.01,0.01,0.01);
+	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.1);
+	octomap::point3d origin1(0,0,0);
 	cubeTreeCreator(*sonarCube1,origin1,0.9,10);
 	octomap::OcTree* cube1 = dynamic_cast<octomap::OcTree*>(sonarCube1);
 		
-	octomap::SonarOcTree* sonarCube2 = new octomap::SonarOcTree(0.05);
+	octomap::SonarOcTree* sonarCube2 = new octomap::SonarOcTree(0.1);
 	octomap::point3d origin2(1.0,0.0,0.0);
 	cubeTreeCreator(*sonarCube2,origin2,0.1,10);
 	octomap::OcTree* cube2 = dynamic_cast<octomap::OcTree*>(sonarCube2);
 	
-	octomap::SonarOcTree* sonarCube3 = new octomap::SonarOcTree(0.05);
-	octomap::point3d origin3(0.0,1.0,0.0);
+	octomap::SonarOcTree* sonarCube3 = new octomap::SonarOcTree(0.1);
+	octomap::point3d origin3(0.0,1.1,0.0);
 	cubeTreeCreator(*sonarCube3,origin3,0.9,10);
 	octomap::OcTree* cube3 = dynamic_cast<octomap::OcTree*>(sonarCube3);
 	
-	octomap::SonarOcTree* sonarCube4 = new octomap::SonarOcTree(0.05);
-	octomap::point3d origin4(0.0,1.5,0.0);
+	octomap::SonarOcTree* sonarCube4 = new octomap::SonarOcTree(0.1);
+	octomap::point3d origin4(0.0,1.6,0.0);
 	cubeTreeCreator(*sonarCube4,origin4,0.1,10);
 	octomap::OcTree* cube4 = dynamic_cast<octomap::OcTree*>(sonarCube4);
 	
 	octomap::point3d zero(0.0,0.0,0.0);
-	mergeTrees(*cube1,*cube2,zero);
-	mergeTrees(*cube1,*cube3,zero);
-	mergeTrees(*cube1,*cube4,zero);
+	octomap::SonarOcTree* sonarCube0 = new octomap::SonarOcTree(0.1);
+	octomap::OcTree* cube0 = dynamic_cast<octomap::OcTree*>(sonarCube0);
+
+        mergeTrees(*cube0,*cube1,zero);
+	mergeTrees(*cube0,*cube2,zero);
+	mergeTrees(*cube0,*cube3,zero);
+	mergeTrees(*cube0,*cube4,zero);
+
 
 	std::cout << "performing some queries:" << std::endl;
   
@@ -155,23 +160,23 @@ int main(int argc, char** argv) {
         print_query_info(query, result);
 	
 	query = octomap::point3d(1.,0.,0.);
-        result = cube1->search (query);
+        result = cube0->search (query);
         print_query_info(query, result);
 
         query = octomap::point3d(0.,.6,0.);
-        result = cube1->search (query);
+        result = cube0->search (query);
         print_query_info(query, result);
 
-        query = octomap::point3d(0.,1.1,0.);
-        result = cube1->search (query);
+        query = octomap::point3d(0.,2.1,0.);
+        result = cube0->search (query);
         print_query_info(query, result);
 	
-	query = octomap::point3d(0.,1.8,0.);
-        result = cube1->search (query);
+	query = octomap::point3d(0.,2.8,0.);
+        result = cube0->search (query);
         print_query_info(query, result);
 	
         query = octomap::point3d(0.,10,0.);
-        result = cube1->search (query);
+        result = cube0->search (query);
         print_query_info(query, result);
 
 
@@ -180,7 +185,7 @@ int main(int argc, char** argv) {
 	
 	
 	
-	cube1->write("tree.ot");
+	cube0->write("tree.ot");
 	
  	return 0;
 }
