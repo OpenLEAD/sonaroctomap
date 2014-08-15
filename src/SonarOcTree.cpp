@@ -14,9 +14,6 @@ bool SonarOcTree::updateOccupancyNodeBinRay(const point3d& origin,
 	for (KeyRay::iterator it = this->keyrays[0].begin();
 			it != this->keyrays[0].end(); it++) {
 		updateNode(*it, log_odd_update, lazy_eval); // insert the log odd of the entire BinRay
-		//std::cout << "ocupanncy= "<<search(*it)->getOccupancy() << std::endl;
-		//std::cout << "log_odd= " << octomap::logodds(log_odd_update) << std::endl;
-
 	}
 
 	return true;
@@ -102,3 +99,74 @@ bool SonarOcTree::insertBeam(const base::samples::SonarBeam& beam,
 	return true;
 }
 
+bool SonarOcTree::mergeTrees(octomap::SonarOcTree &tree2,octomap::point3d offset){
+  
+  this->expand();
+  tree2.expand();
+  //verify the consequences of diferent depths
+  unsigned int depthRoot = this->getTreeDepth();
+  unsigned int depthTree2 = tree2.getTreeDepth();
+  
+  for (octomap::OcTree::leaf_iterator it = tree2.begin(depthTree2), end = tree2.end(); it != end; ++it)
+  {
+	octomap::point3d tree2Point = it.getCoordinate();
+	
+	octomap::point3d rootPoint = offset + tree2Point; 
+
+        // check occupancy prob:
+        float tree2PointLogOdd = it->getLogOdds();
+	this->updateNode(rootPoint,tree2PointLogOdd,false);
+  }  
+  
+  return true;
+  
+}
+
+double compareTrees(octomap::OcTree &rootTree,octomap::OcTree &localTree,octomap::point3d offset)
+{
+  
+    rootTree.expand();
+    localTree.expand();
+    //verify the consequences of diferent depths
+    unsigned int depthRoot = rootTree.getTreeDepth();
+    unsigned int depthLocal = localTree.getTreeDepth();
+
+    double kld_sum = 0;
+    for (octomap::OcTree::leaf_iterator it = localTree.begin(depthLocal), end = localTree.end(); it != end; ++it)
+    {
+        
+    octomap::point3d localPoint = it.getCoordinate();
+	
+    octomap::point3d rootPoint = offset + localPoint; 
+    octomap::OcTreeNode* rootNode = rootTree.search(rootPoint);
+    
+    double rootPointProb;
+    double localPointProb = it->getOccupancy();
+    
+    
+    if(!rootNode){
+        //TODO See a meaningfull value for a unknown point in the other tree
+        rootPointProb = -1;
+    }
+    else
+    {
+        rootPointProb = rootNode->getOccupancy();
+    }
+    
+    double kld = 0;
+    if (localPointProb < 0.0001)
+        kld =log((1-rootPointProb)/(1-localPointProb))*(1-rootPointProb);
+    else if (localPointProb > 0.9999)
+        kld =log(rootPointProb/localPointProb)*rootPointProb;
+    else
+        kld +=log(rootPointProb/localPointProb)*rootPointProb + log((1-rootPointProb)/(1-localPointProb))*(1-rootPointProb);
+
+    if (isnan(kld))
+    return -1;
+    
+    kld_sum+=kld;
+      
+    }
+    return kld_sum;
+
+}
