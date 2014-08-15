@@ -1,4 +1,5 @@
 #include <sonaroctomap/SonarOcTree.hpp>
+#include "matio.h"
 #include <octomap/math/Utils.h>
 
 using namespace octomap;
@@ -19,6 +20,17 @@ bool SonarOcTree::updateOccupancyNodeBinRay(const point3d& origin,
 	}
 
 	return true;
+}
+
+bool CreateBinPointCloud(double octo_resolution, std::string filename, std::string varname, double length){
+  mat_t *openmatfp;
+  matvar_t *matvar;
+  openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
+  matvar = Mat_VarRead(openmatfp,varname.c_str());
+  Mat_VarPrint(matvar,1);
+  Mat_VarFree(matvar);
+  Mat_Close(openmatfp);
+  return true;
 }
 
 bool SonarOcTree::insertBinsRay(std::vector<uint8_t> beam_vector,

@@ -54,7 +54,15 @@ public:
 	 const point3d& end, double maxrange, float log_odd_update,
 	 bool lazy_eval);*/
 
+	bool CreateBinPointCloud(double octo_resolution,
+			std::string filename, std::string varname,
+			double length);
+
 	bool insertBinsRay(std::vector<uint8_t> beam_vector,
+			octomath::Vector3 origin, octomath::Vector3 ray_direction,
+			double length);
+
+	bool insertOccupancyBin(std::vector<uint8_t> beam_vector,
 			octomath::Vector3 origin, octomath::Vector3 ray_direction,
 			double length);
 
