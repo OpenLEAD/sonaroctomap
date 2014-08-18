@@ -68,6 +68,8 @@ public:
 
 	bool insertBeam(const base::samples::SonarBeam& beam,
 			base::samples::RigidBodyState sonar_state);
+	
+	bool mergeTrees(octomap::SonarOcTree &tree2,octomap::point3d offset);
 
 };
 

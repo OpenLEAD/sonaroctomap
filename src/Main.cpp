@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <boost/concept_check.hpp>
 #include <octomap/math/Utils.h>
 #include <octomap/octomap.h>
 #include <base/Time.hpp>
@@ -42,43 +43,6 @@ void testWrappers (octomap::SonarOcTree &sonarTree){
 		    }
 		        
                 }
-}
-
-void mergeTrees(octomap::OcTree &rootTree,octomap::OcTree &localTree,octomap::point3d offset){
-  
-  rootTree.expand();
-  localTree.expand();
-  //verify the consequences of diferent depths
-  unsigned int depthRoot = rootTree.getTreeDepth();
-  unsigned int depthLocal = localTree.getTreeDepth();
-  
-  for (octomap::OcTree::leaf_iterator it = localTree.begin(depthLocal), end = localTree.end(); it != end; ++it)
-  {
-        
-	octomap::point3d localPoint = it.getCoordinate();
-	
-	octomap::point3d rootPoint = offset + localPoint; 
-	
-	octomap::OcTreeNode* rootNode = rootTree.search(rootPoint);
-	
-        // check occupancy prob:
-        double localProb = it->getOccupancy();
-	double rootProb; 
-	
-	if(!rootNode){
-	  rootProb = -1;
-	  std::cout << "point only in localTree with prob = "<< localProb << std::endl;
-	  rootTree.updateNode(rootPoint.x(),rootPoint.y(),rootPoint.z(),octomap::logodds(localProb),true);
-	}
-	else
-	{
-	  rootProb = rootNode->getOccupancy();
-	  std::cout << "occupancy difference = "<< rootProb << " - " << localProb << " = " << rootProb - localProb << std::endl;
-	  double diffProb = rootProb - localProb;
-	  rootTree.updateNode(rootPoint.x(),rootPoint.y(),rootPoint.z(),octomap::logodds(diffProb),true);
-	}
-	delete rootNode;
-  }  
 }
 
 bool beamTreeCreator(octomap::SonarOcTree &tree)
@@ -126,66 +90,58 @@ int main(int argc, char** argv) {
 	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.1);
 	octomap::point3d origin1(0,0,0);
 	cubeTreeCreator(*sonarCube1,origin1,0.9,10);
-	octomap::OcTree* cube1 = dynamic_cast<octomap::OcTree*>(sonarCube1);
+
 		
 	octomap::SonarOcTree* sonarCube2 = new octomap::SonarOcTree(0.1);
 	octomap::point3d origin2(1.0,0.0,0.0);
 	cubeTreeCreator(*sonarCube2,origin2,0.1,10);
-	octomap::OcTree* cube2 = dynamic_cast<octomap::OcTree*>(sonarCube2);
 	
 	octomap::SonarOcTree* sonarCube3 = new octomap::SonarOcTree(0.1);
 	octomap::point3d origin3(0.0,1.1,0.0);
 	cubeTreeCreator(*sonarCube3,origin3,0.9,10);
-	octomap::OcTree* cube3 = dynamic_cast<octomap::OcTree*>(sonarCube3);
 	
 	octomap::SonarOcTree* sonarCube4 = new octomap::SonarOcTree(0.1);
 	octomap::point3d origin4(0.0,1.6,0.0);
 	cubeTreeCreator(*sonarCube4,origin4,0.1,10);
-	octomap::OcTree* cube4 = dynamic_cast<octomap::OcTree*>(sonarCube4);
 	
 	octomap::point3d zero(0.0,0.0,0.0);
 	octomap::SonarOcTree* sonarCube0 = new octomap::SonarOcTree(0.1);
-	octomap::OcTree* cube0 = dynamic_cast<octomap::OcTree*>(sonarCube0);
-
-        mergeTrees(*cube0,*cube1,zero);
-	mergeTrees(*cube0,*cube2,zero);
-	mergeTrees(*cube0,*cube3,zero);
-	mergeTrees(*cube0,*cube4,zero);
-
+        
+	
+	sonarCube1->mergeTrees(*sonarCube2,zero);
+	sonarCube1->mergeTrees(*sonarCube3,zero);
+	sonarCube1->mergeTrees(*sonarCube4,zero);	
 
 	std::cout << "performing some queries:" << std::endl;
   
         octomap::point3d query (0., 0., 0.);
-        octomap::OcTreeNode* result = cube1->search (query);
+        octomap::OcTreeNode* result = sonarCube1->search (query);
         print_query_info(query, result);
 	
 	query = octomap::point3d(1.,0.,0.);
-        result = cube0->search (query);
+        result = sonarCube1->search (query);
         print_query_info(query, result);
 
         query = octomap::point3d(0.,.6,0.);
-        result = cube0->search (query);
+        result = sonarCube1->search (query);
         print_query_info(query, result);
 
         query = octomap::point3d(0.,2.1,0.);
-        result = cube0->search (query);
+        result = sonarCube1->search (query);
         print_query_info(query, result);
 	
 	query = octomap::point3d(0.,2.8,0.);
-        result = cube0->search (query);
+        result = sonarCube1->search (query);
         print_query_info(query, result);
 	
         query = octomap::point3d(0.,10,0.);
-        result = cube0->search (query);
+        result = sonarCube1->search (query);
         print_query_info(query, result);
 
 
         std::cout << std::endl;
 	
-	
-	
-	
-	cube0->write("tree.ot");
+	sonarCube1->write("tree.ot");
 	
  	return 0;
 }

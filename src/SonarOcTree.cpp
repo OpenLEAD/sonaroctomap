@@ -14,9 +14,6 @@ bool SonarOcTree::updateOccupancyNodeBinRay(const point3d& origin,
 	for (KeyRay::iterator it = this->keyrays[0].begin();
 			it != this->keyrays[0].end(); it++) {
 		updateNode(*it, log_odd_update, lazy_eval); // insert the log odd of the entire BinRay
-		//std::cout << "ocupanncy= "<<search(*it)->getOccupancy() << std::endl;
-		//std::cout << "log_odd= " << octomap::logodds(log_odd_update) << std::endl;
-
 	}
 
 	return true;
@@ -118,3 +115,54 @@ bool SonarOcTree::insertBeam(const base::samples::SonarBeam& beam,
 	return true;
 }
 
+bool SonarOcTree::mergeTrees(octomap::SonarOcTree &tree2,octomap::point3d offset){
+  tree2.expand();
+  
+  for (octomap::OcTree::leaf_iterator it = tree2.begin_leafs(), end = tree2.end_leafs(); it != end; ++it)
+  {
+	octomap::point3d tree2Point = it.getCoordinate();
+	
+	octomap::point3d rootPoint = offset + tree2Point; 
+
+        // check occupancy prob:
+        float tree2PointLogOdd = it->getLogOdds();
+	this->updateNode(rootPoint,tree2PointLogOdd,false);
+  }  
+  
+  return true;
+  
+}
+
+double compareTrees(octomap::OcTree &rootTree,octomap::OcTree &localTree,octomap::point3d local2root)
+{
+    rootTree.expand();
+    localTree.expand();
+
+    double kld_sum = 0;
+    for (octomap::OcTree::leaf_iterator it = localTree.begin_leafs(), end = localTree.end_leafs(); it != end; ++it)
+    {
+	octomap::point3d localPoint = it.getCoordinate();
+	octomap::point3d rootPoint = local2root + localPoint; 
+	octomap::OcTreeNode* rootNode = rootTree.search(rootPoint);
+	if(!rootNode)
+	    continue;
+	
+	double rootPointProb = rootPointProb = rootNode->getOccupancy();
+	double localPointProb = it->getOccupancy();
+	
+	double kld = 0;
+	if (localPointProb < 0.0001)
+	    kld =log((1-rootPointProb)/(1-localPointProb))*(1-rootPointProb);
+	else if (localPointProb > 0.9999)
+	    kld =log(rootPointProb/localPointProb)*rootPointProb;
+	else
+	    kld +=log(rootPointProb/localPointProb)*rootPointProb + log((1-rootPointProb)/(1-localPointProb))*(1-rootPointProb);
+
+	kld_sum+=kld;
+    }
+    
+    if (isnan(kld_sum))
+	throw std::logic_error("found NaN when comparing octomaps");
+    return kld_sum;
+
+}
