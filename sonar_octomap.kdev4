@@ -1,0 +1,3 @@
+[Project]
+Manager=KDevCMakeManager
+Name=sonar_octomap_driver
