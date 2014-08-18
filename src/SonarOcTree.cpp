@@ -22,11 +22,27 @@ bool SonarOcTree::updateOccupancyNodeBinRay(const point3d& origin,
 	return true;
 }
 
-bool CreateBinPointCloud(double octo_resolution, std::string filename, std::string varname, double length){
+const double ThetaMin = -M_PI*686/1800;
+const double ThetaMax = M_PI*874/1800;
+const double PhiMin = -M_PI*315/1800;
+const double PhiMax = M_PI*290/1800;
+
+bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filename, std::string varname, double length){
   mat_t *openmatfp;
   matvar_t *matvar;
   openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
   matvar = Mat_VarRead(openmatfp,varname.c_str());
+  octomap::Pointcloud bin;
+  double rhomin = 8;
+  double rhomax = 12;
+  for(double rho = DBL_EPSILON+rhomin; rho<rhomax;rho+=octo_resolution){
+    
+    
+  }
+    
+  std::cout << ((double*)matvar->data)[0];
+    
+  //std::cout<< "MEUS TESTE -> " << ((double*)matvar->data)[matvar->dims[0]*2+1] << std::endl;
   Mat_VarPrint(matvar,1);
   Mat_VarFree(matvar);
   Mat_Close(openmatfp);
