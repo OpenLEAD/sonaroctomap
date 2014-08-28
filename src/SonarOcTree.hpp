@@ -70,8 +70,12 @@ public:
 			base::samples::RigidBodyState sonar_state);
 	
 	bool mergeTrees(octomap::SonarOcTree &tree2,octomap::point3d offset);
+	
+	double compareTrees(const SonarOcTree& tree, base::Vector3d& treePosition, base::Quaterniond& treeOrientation);
 
 };
+
+
 
 } //end namespace
 
