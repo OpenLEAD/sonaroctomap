@@ -154,69 +154,51 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
   std::cout << std::endl;
 
 
-  int stepsxyz[3];
-  double origincorner[3];
 
   std::cout<< "side discretization" << std::endl;
   //Origin (minor corner of the bounding box) and side discretization (number of box between corners)
-  for(int axis=0; axis<3; axis++){
-    int nmin = trunc(rangexyz[axis][0]/octo_resolution);
-    int nmax = trunc(rangexyz[axis][1]/octo_resolution);
 
-    stepsxyz[axis] = abs(nmin)+abs(nmax)+1;
-    origincorner[axis] = nmin*octo_resolution+octo_resolution/2;
-  }
+  octomap::OcTreeKey startkey = this->coordToKey(rangexyz[0][0],rangexyz[1][0],rangexyz[2][0]);
+  octomap::OcTreeKey endkey = this->coordToKey(rangexyz[0][1],rangexyz[1][1],rangexyz[2][1]);
   
   /* filling octomap & angle to matrix index convertions */
 
   const double kstep = 1800/M_PI;
   bool dummy=false;
   double old=0;
-  std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") from ("<< origincorner[0] << ", " << origincorner[1] << ", " << origincorner[2] << ") and convertions: "<< stepsxyz[0] << ", " << stepsxyz[1] << ", " << stepsxyz[2] << std::endl;
-  for(int stepX=0; stepX<stepsxyz[0]; stepX++)
-  for(int stepY=0; stepY<stepsxyz[1]; stepY++)
-  for(int stepZ=0; stepZ<stepsxyz[2]; stepZ++){
-    double x = origincorner[0] + stepX*octo_resolution;
-    double y = origincorner[1] + stepY*octo_resolution;
-    double z = origincorner[2] + stepZ*octo_resolution;
+  
+  
+  std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") from "<< this->keyToCoord(startkey) << " and to "<< this->keyToCoord(endkey) << std::endl;
+  
+  for(int stepX=startkey[0]; stepX<=endkey[0]; stepX++)
+  for(int stepY=startkey[1]; stepY<=endkey[1]; stepY++)
+  for(int stepZ=startkey[2]; stepZ<=endkey[2]; stepZ++){
+    octomap::OcTreeKey stepkey = octomap::OcTreeKey(stepX,stepY,stepZ);
+    octomap::point3d coord = this->keyToCoord(stepkey);
     
-    double radius = sqrt(x*x + y*y + z*z);
+    
+    double radius = coord.norm();
 
+    
     if(radius < rbinlimits[bin] || radius > rbinlimits[bin+1])
       continue;
 
-    double phi = atan2( y, x);
+    double phi = atan2( coord.y(), coord.x());
 
-    double theta = asin(z/radius);
+    double theta = asin(coord.z()/radius);
 
-//    std::cout<< "1";
     int col = trunc((theta-ThetaMin)*kstep);
-//    std::cout << std::endl << "("<< stepX <<", "<< stepY <<", "<< stepZ <<") row: " << row;
     if(col < 0 || col >= Ncol)	
       continue;
 
-  //  std::cout<< "2";
     int row = trunc((phi-PhiMin)*kstep);
-//     std::cout << ", col: " << col;
     if(row < 0 || row >= Nrow)
       continue; 
-//        std::cout<< row << ", " << col;
-//     std::cout<< " - " << ((double*)matvar->data)[Ncol*row + col] << std::endl;
-
-/*    
-    if(((double*)matvar->data)[Ncol*row + col]==0){
-      if (dummy)
-	std::cout << "[" << row << "," << col << "] = " << old << std::endl;
-      dummy = false;
+    /*
+    if(((double*)matvar->data)[Ncol*row + col]==0)
       continue;
-    }
-    
-    dummy = true;
-    old = ((double*)matvar->data)[Ncol*row + col];
     */
-    
-    
-    this->updateNode(x,y,z, (float) ((double*)matvar->data)[Ncol*row + col]);
+    this->updateNode(stepkey, (float) ((double*)matvar->data)[Ncol*row + col]);
   }
     
   //std::cout<< "MEUS TESTE -> " << ((double*)matvar->data)[matvar->dims[0]*2+1] << std::endl;
