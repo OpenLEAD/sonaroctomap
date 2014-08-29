@@ -1,9 +1,38 @@
 #include <sonaroctomap/SonarOcTree.hpp>
 #include "matio.h"
+#include <Eigen/Dense>
 #include <octomap/math/Utils.h>
 
 using namespace octomap;
 
+
+
+inline void sph2cart(base::Vector3d& cartvec, double radius, double theta, double phi){
+	cartvec[0]=radius*cos(phi)*cos(theta);
+	cartvec[1]=radius*cos(phi)*sin(theta);
+	cartvec[2]=radius*sin(phi);
+// 	std::cout << "carttovec: " << std::endl << cartvec << "..." <<std::endl;
+}
+
+template<typename T>	
+void coutarray(T s, int i, int j)
+{
+    for (int ii = 0; ii < i; ii++){
+    for (int jj = 0; jj < j; jj++) 
+    std::cout << s[ii][jj] << " "; 
+    std::cout << std::endl;
+    }
+}
+
+
+inline void updaterange(double range[][2],const base::Vector3d& source){
+for(int axis = 0; axis < 3; axis++){
+  range[axis][0]=std::min(range[axis][0],source(axis));
+  range[axis][1]=std::max(range[axis][1],source(axis));
+}
+}
+  
+  
 bool SonarOcTree::updateOccupancyNodeBinRay(const point3d& origin,
 		const point3d& end, float log_odd_update, bool lazy_eval) {
 
@@ -19,28 +48,180 @@ bool SonarOcTree::updateOccupancyNodeBinRay(const point3d& origin,
 	return true;
 }
 
-const double ThetaMin = -M_PI*686/1800;
-const double ThetaMax = M_PI*874/1800;
-const double PhiMin = -M_PI*315/1800;
-const double PhiMax = M_PI*290/1800;
+const double PhiMin= -M_PI*686/1800;
+const double PhiMax= M_PI*874/1800;
+const double ThetaMin = -M_PI*315/1800;
+const double ThetaMax = M_PI*290/1800;
 
-bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filename, std::string varname, double length){
+bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filename, std::string varname, int bin){
   mat_t *openmatfp;
   matvar_t *matvar;
   openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
   matvar = Mat_VarRead(openmatfp,varname.c_str());
-  octomap::Pointcloud bin;
-  double rhomin = 8;
-  double rhomax = 12;
-  for(double rho = DBL_EPSILON+rhomin; rho<rhomax;rho+=octo_resolution){
+  std::cout << ((double*)matvar->data)[0] << std::endl;
+  
+  base::Matrix3d Pantilt;
+  base::Vector3d Backcorners[4];
+  base::Vector3d Frontcorners[4];
+  double tangentplanegain;
+  double alpha = 0;
+  double beta = 0;
+  int Nrow = matvar->dims[0];
+  int Ncol = matvar->dims[1];
+
+  Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
+	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY());
+
+  std::cout << Pantilt << std::endl;
+  //TODO conferir essas constantes
+  double thetalimits[]={ThetaMin,ThetaMax};
+  double philimits[]={PhiMin,PhiMax};
+  double rbinlimits[]={1,4,6,8,10,12,14,16};
+  
+  double thetaM = (thetalimits[1]+thetalimits[0])/2;
+  double phiM = (philimits[1]+philimits[0])/2;
+
+  std::cout<< "first loop"<<std::endl 
+			  <<"rbinlimits[bin:bin+1] "<<  rbinlimits[bin] << ":" << rbinlimits[bin+1] << std::endl
+			  <<"thetalimits[0:1] "<<  thetalimits[0] << ":" << thetalimits[1] << std::endl
+			  <<"philimits[0:1] "<<  philimits[0] << ":" << philimits[1] << std::endl
+			  <<"thetaM "<<  thetaM << std::endl
+			  <<"phiM "<<  phiM << std::endl << std::endl;
+
+  for(int theta_index=0; theta_index<2; theta_index++)
+  for(int phi_index=0; phi_index<2; phi_index++)
+  {
+  
+    //From sonar perpective
+    sph2cart(Backcorners[(theta_index << 1) | phi_index],
+    rbinlimits[bin],
+    thetalimits[theta_index],
+    philimits[phi_index]);	
+/*
+    std::cout<< "dT=" << thetaM-thetalimits[theta_index] << ", dP=" << phiM-philimits[phi_index] << std::endl;
+    std::cout<< "abs(cos(dT))=" << abs(cos(thetaM-thetalimits[theta_index])) << ", cos(dP)=" << cos(phiM-philimits[phi_index]) << std::endl;*/
+    sph2cart(Frontcorners[(theta_index << 1) | phi_index],
+    (rbinlimits[bin+1]/cos(thetaM-thetalimits[theta_index]))/cos(phiM-philimits[phi_index]),
+    thetalimits[theta_index],
+    philimits[phi_index]);
+
+    //from inertial perspective
+    Backcorners[(theta_index << 1) | phi_index] = Pantilt * Backcorners[(theta_index << 1) | phi_index];
+    //std::cout << theta_index << "," <<phi_index << " Backcorners["<< ((theta_index << 1) + phi_index) <<"] " << std::endl << Backcorners[(theta_index << 1) + phi_index] << std::endl << std::endl;
     
+    
+    Frontcorners[(theta_index << 1) | phi_index] = Pantilt * Frontcorners[(theta_index << 1) | phi_index];
     
   }
+    std::cout << "Backcorners: [" << std::endl;
+    for (int k = 0; k < 4; k++) 
+    std::cout << Backcorners[k] << std::endl << std::endl;
+    std::cout << "]" << std::endl;
     
-  std::cout << ((double*)matvar->data)[0];
+        std::cout << "Frontcorners: [" << std::endl;
+    for (int k = 0; k < 4; k++) 
+    std::cout << Frontcorners[k] << std::endl <<  std::endl;
+    std::cout << "]" << std::endl;
+  
+
+  
+  
+  double rangexyz[3][2];
+
+
+  std::cout<< "first box guess" << std::endl;
+  std::cout<< "min(Frontcorners[0](1),Backcorners[0](1))" << std::endl;
+  std::cout<< "min("<<Frontcorners[0](1)<<","<<Backcorners[0](1)<<") = "<< std::min(Frontcorners[0](1),Backcorners[0](1)) << std::endl;
+  
+  //Initial bounding box guess
+  for(int axis=0; axis<3; axis++){
+    rangexyz[axis][0]=std::min(Frontcorners[0](axis),Backcorners[0](axis));
+    rangexyz[axis][1]=std::max(Frontcorners[0](axis),Backcorners[0](axis));
+  }
+  std::cout << "rangexyz = " << std::endl;
+  coutarray(rangexyz,3,2);
+  std::cout << std::endl;
+
+  std::cout<< "computing box" << std::endl;
+  //Bounding box computation
+  for(int corner = 1; corner < 4; corner++){
+    updaterange(rangexyz,Frontcorners[corner]);
+    updaterange(rangexyz,Backcorners[corner]);
+  }
+  
+  std::cout << "rangexyz = " << std::endl;
+  coutarray(rangexyz,3,2);
+  std::cout << std::endl;
+
+
+  int stepsxyz[3];
+  double origincorner[3];
+
+  std::cout<< "side discretization" << std::endl;
+  //Origin (minor corner of the bounding box) and side discretization (number of box between corners)
+  for(int axis=0; axis<3; axis++){
+    int nmin = trunc(rangexyz[axis][0]/octo_resolution);
+    int nmax = trunc(rangexyz[axis][1]/octo_resolution);
+
+    stepsxyz[axis] = abs(nmin)+abs(nmax)+1;
+    origincorner[axis] = nmin*octo_resolution+octo_resolution/2;
+  }
+  
+  /* filling octomap & angle to matrix index convertions */
+
+  const double kstep = 1800/M_PI;
+  bool dummy=false;
+  double old=0;
+  std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") from ("<< origincorner[0] << ", " << origincorner[1] << ", " << origincorner[2] << ") and convertions: "<< stepsxyz[0] << ", " << stepsxyz[1] << ", " << stepsxyz[2] << std::endl;
+  for(int stepX=0; stepX<stepsxyz[0]; stepX++)
+  for(int stepY=0; stepY<stepsxyz[1]; stepY++)
+  for(int stepZ=0; stepZ<stepsxyz[2]; stepZ++){
+    double x = origincorner[0] + stepX*octo_resolution;
+    double y = origincorner[1] + stepY*octo_resolution;
+    double z = origincorner[2] + stepZ*octo_resolution;
+    
+    double radius = sqrt(x*x + y*y + z*z);
+
+    if(radius < rbinlimits[bin] || radius > rbinlimits[bin+1])
+      continue;
+
+    double phi = atan2( y, x);
+
+    double theta = asin(z/radius);
+
+//    std::cout<< "1";
+    int col = trunc((theta-ThetaMin)*kstep);
+//    std::cout << std::endl << "("<< stepX <<", "<< stepY <<", "<< stepZ <<") row: " << row;
+    if(col < 0 || col >= Ncol)	
+      continue;
+
+  //  std::cout<< "2";
+    int row = trunc((phi-PhiMin)*kstep);
+//     std::cout << ", col: " << col;
+    if(row < 0 || row >= Nrow)
+      continue; 
+//        std::cout<< row << ", " << col;
+//     std::cout<< " - " << ((double*)matvar->data)[Ncol*row + col] << std::endl;
+
+/*    
+    if(((double*)matvar->data)[Ncol*row + col]==0){
+      if (dummy)
+	std::cout << "[" << row << "," << col << "] = " << old << std::endl;
+      dummy = false;
+      continue;
+    }
+    
+    dummy = true;
+    old = ((double*)matvar->data)[Ncol*row + col];
+    */
+    
+    
+    this->updateNode(x,y,z, (float) ((double*)matvar->data)[Ncol*row + col]);
+  }
     
   //std::cout<< "MEUS TESTE -> " << ((double*)matvar->data)[matvar->dims[0]*2+1] << std::endl;
-  Mat_VarPrint(matvar,1);
+  //Mat_VarPrint(matvar,1);
+  std::cout<< "DONE" << std::endl;
   Mat_VarFree(matvar);
   Mat_Close(openmatfp);
   return true;

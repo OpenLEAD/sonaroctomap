@@ -56,7 +56,7 @@ public:
 
 	bool CreateBinPointCloud(double octo_resolution,
 			std::string filename, std::string varname,
-			double length);
+			int bin	);
 
 	bool insertBinsRay(std::vector<uint8_t> beam_vector,
 			octomath::Vector3 origin, octomath::Vector3 ray_direction,
