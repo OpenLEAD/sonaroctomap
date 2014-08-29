@@ -73,26 +73,6 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
   double beta = 0;
   int Nrow = matvar->dims[0];
   int Ncol = matvar->dims[1];
-
-//   double max =0;
-//   int ci = 0;
-//   int ri = 0;
-//   
-//   for(int c = 0;  c < Ncol; c++)
-//   for(int r = 0;  r < Nrow; r++){
-//   if (((double*)matvar->data)[r + Nrow*c] > max){
-//     max = ((double*)matvar->data)[r + Nrow*c];
-//     ci = c;
-//     ri = r;
-//   }
-// //   std::cout << '\xd' << ci;
-//   }
-//   
-//   for(int dc = -3;  dc < 3; dc++)
-//   for(int dr = -2;  dr < 2; dr++)
-//   std::cout << "("<< ri+dr+1 <<","<< ci+dc+1 << ") = " << ((double*)matvar->data)[(ri+dr) + Nrow*(ci+dc)] << std::endl;
-// //   std::cout << "("<< ri <<","<< ci-1 << ") = " << ((double*)matvar->data)[Ncol*(ri-1) + (ci-2)] << std::endl;
-  
   
   Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
 	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY());
