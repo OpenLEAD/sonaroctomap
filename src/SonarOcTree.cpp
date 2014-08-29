@@ -60,6 +60,11 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
   matvar = Mat_VarRead(openmatfp,varname.c_str());
   std::cout << ((double*)matvar->data)[0] << std::endl;
   
+//   Mat_VarPrint(matvar,0);
+  
+  
+  
+  
   base::Matrix3d Pantilt;
   base::Vector3d Backcorners[4];
   base::Vector3d Frontcorners[4];
@@ -69,6 +74,26 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
   int Nrow = matvar->dims[0];
   int Ncol = matvar->dims[1];
 
+//   double max =0;
+//   int ci = 0;
+//   int ri = 0;
+//   
+//   for(int c = 0;  c < Ncol; c++)
+//   for(int r = 0;  r < Nrow; r++){
+//   if (((double*)matvar->data)[r + Nrow*c] > max){
+//     max = ((double*)matvar->data)[r + Nrow*c];
+//     ci = c;
+//     ri = r;
+//   }
+// //   std::cout << '\xd' << ci;
+//   }
+//   
+//   for(int dc = -3;  dc < 3; dc++)
+//   for(int dr = -2;  dr < 2; dr++)
+//   std::cout << "("<< ri+dr+1 <<","<< ci+dc+1 << ") = " << ((double*)matvar->data)[(ri+dr) + Nrow*(ci+dc)] << std::endl;
+// //   std::cout << "("<< ri <<","<< ci-1 << ") = " << ((double*)matvar->data)[Ncol*(ri-1) + (ci-2)] << std::endl;
+  
+  
   Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
 	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY());
 
@@ -167,6 +192,8 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
   bool dummy=false;
   double old=0;
   
+  std::cout<< "(0,0) - " << ((double*)matvar->data)[((int)trunc((0.001-PhiMin)*kstep)) +  Nrow*(int)trunc((0.001-ThetaMin)*kstep)] << std::endl;
+  std::cout<< "(0,0)[686,315] - " << ((double*)matvar->data)[686 + Nrow*315] << std::endl;
   
   std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") from "<< this->keyToCoord(startkey) << " and to "<< this->keyToCoord(endkey) << std::endl;
   
@@ -194,11 +221,12 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
     int row = trunc((phi-PhiMin)*kstep);
     if(row < 0 || row >= Nrow)
       continue; 
-    /*
-    if(((double*)matvar->data)[Ncol*row + col]==0)
+
+    
+    if(((double*)matvar->data)[row + Nrow*col]==0.0)
       continue;
-    */
-    this->updateNode(stepkey, (float) ((double*)matvar->data)[Ncol*row + col]);
+    
+    this->updateNode(stepkey, (float) 	((double*)matvar->data)[row + Nrow*col]);
   }
     
   //std::cout<< "MEUS TESTE -> " << ((double*)matvar->data)[matvar->dims[0]*2+1] << std::endl;
