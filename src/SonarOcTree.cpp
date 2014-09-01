@@ -2,10 +2,11 @@
 #include "matio.h"
 #include <Eigen/Dense>
 #include <octomap/math/Utils.h>
+#include <octomap/math/Vector3.h>
+#include <octomap/math/Quaternion.h>
+#include <octomap/math/Pose6D.h>
 
 using namespace octomap;
-
-
 
 inline void sph2cart(base::Vector3d& cartvec, double radius, double theta, double phi){
 	cartvec[0]=radius*cos(phi)*cos(theta);
@@ -33,6 +34,16 @@ for(int axis = 0; axis < 3; axis++){
 }
   
   
+octomath::Vector3 eigen2octoVector(base::Vector3d vec)
+{
+  return octomath::Vector3(vec.x(),vec.y(),vec.z());
+}
+
+octomath::Quaternion eigen3octoQuaternion(base::Quaterniond q)
+{
+  return octomath::Quaternion(q.w(),q.x(),q.y(),q.z());
+}
+
 bool SonarOcTree::updateOccupancyNodeBinRay(const point3d& origin,
 		const point3d& end, float log_odd_update, bool lazy_eval) {
 
@@ -236,7 +247,7 @@ bool SonarOcTree::insertBinsRay(std::vector<uint8_t> beam_vector,
 		if(prob>0.1){
 
 		if (!this->updateOccupancyNodeBinRay(current_origin, current_endpoint,
-				 octomap::logodds(prob), false)) {
+				 logodds(prob), false)) {
 			//TODO exception
 			
 
@@ -286,14 +297,14 @@ bool SonarOcTree::insertBeam(const base::samples::SonarBeam& beam,
 	return true;
 }
 
-bool SonarOcTree::mergeTrees(octomap::SonarOcTree &tree2,octomap::point3d offset){
+bool SonarOcTree::mergeTrees(SonarOcTree &tree2,point3d offset){
   tree2.expand();
   
-  for (octomap::OcTree::leaf_iterator it = tree2.begin_leafs(), end = tree2.end_leafs(); it != end; ++it)
+  for (OcTree::leaf_iterator it = tree2.begin_leafs(), end = tree2.end_leafs(); it != end; ++it)
   {
-	octomap::point3d tree2Point = it.getCoordinate();
+	point3d tree2Point = it.getCoordinate();
 	
-	octomap::point3d rootPoint = offset + tree2Point; 
+	point3d rootPoint = offset + tree2Point; 
 
         // check occupancy prob:
         float tree2PointLogOdd = it->getLogOdds();
@@ -304,30 +315,33 @@ bool SonarOcTree::mergeTrees(octomap::SonarOcTree &tree2,octomap::point3d offset
   
 }
 
-double compareTrees(octomap::OcTree &rootTree,octomap::OcTree &localTree,octomap::point3d local2root)
+double SonarOcTree::compareTrees(const SonarOcTree& tree, base::Vector3d& treePosition, base::Quaterniond& treeOrientation)
 {
-    rootTree.expand();
-    localTree.expand();
-
     double kld_sum = 0;
-    for (octomap::OcTree::leaf_iterator it = localTree.begin_leafs(), end = localTree.end_leafs(); it != end; ++it)
+    for (OcTree::leaf_iterator it = tree.begin_leafs(), end = tree.end_leafs(); it != end; ++it)
     {
-	octomap::point3d localPoint = it.getCoordinate();
-	octomap::point3d rootPoint = local2root + localPoint; 
-	octomap::OcTreeNode* rootNode = rootTree.search(rootPoint);
+	point3d treePoint = it.getCoordinate();
+	
+	pose6d treeTransfomOctomap = octomath::Pose6D(eigen2octoVector(treePosition),
+							     eigen3octoQuaternion(treeOrientation)); 
+	
+	
+	point3d root2Tree = treeTransfomOctomap.transform(treePoint);
+
+	OcTreeNode* rootNode = this->search(root2Tree);
 	if(!rootNode)
 	    continue;
 	
-	double rootPointProb = rootPointProb = rootNode->getOccupancy();
-	double localPointProb = it->getOccupancy();
+	double rootPointProb = rootNode->getOccupancy();
+	double treePointProb = it->getOccupancy();
 	
 	double kld = 0;
-	if (localPointProb < 0.0001)
-	    kld =log((1-rootPointProb)/(1-localPointProb))*(1-rootPointProb);
-	else if (localPointProb > 0.9999)
-	    kld =log(rootPointProb/localPointProb)*rootPointProb;
+	if (treePointProb < 0.0001)
+	    kld =log((1-rootPointProb)/(1-treePointProb))*(1-rootPointProb);
+	else if (treePointProb > 0.9999)
+	    kld =log(rootPointProb/treePointProb)*rootPointProb;
 	else
-	    kld +=log(rootPointProb/localPointProb)*rootPointProb + log((1-rootPointProb)/(1-localPointProb))*(1-rootPointProb);
+	    kld +=log(rootPointProb/treePointProb)*rootPointProb + log((1-rootPointProb)/(1-treePointProb))*(1-rootPointProb);
 
 	kld_sum+=kld;
     }
@@ -335,5 +349,6 @@ double compareTrees(octomap::OcTree &rootTree,octomap::OcTree &localTree,octomap
     if (isnan(kld_sum))
 	throw std::logic_error("found NaN when comparing octomaps");
     return kld_sum;
-
 }
+
+
