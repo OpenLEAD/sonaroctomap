@@ -15,7 +15,7 @@ namespace octomap {
 
 class SonarOcTree: public OcTree {
   
-	double rbinlimits[373];
+	double rbinlimits[500];
 public:
 
 	/// Default constructor, sets resolution of leafs
@@ -57,9 +57,8 @@ public:
 	 const point3d& end, double maxrange, float log_odd_update,
 	 bool lazy_eval);*/
 
-	bool CreateBin(double octo_resolution,  std::string filename, 
-				 std::string varname, int bin, double bearing = 0, 
-				 double alpha = 0, double beta = 0);
+	bool CreateBin(std::string filename, std::string varname, int bin, 
+		       double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
 	bool insertBinsRay(std::vector<uint8_t> beam_vector,
 			octomath::Vector3 origin, octomath::Vector3 ray_direction,
@@ -69,6 +68,9 @@ public:
 			octomath::Vector3 origin, octomath::Vector3 ray_direction,
 			double length);
 
+	bool insertRealBeam(const base::samples::SonarBeam& beam,
+			base::samples::RigidBodyState& sonar_state);
+	
 	bool insertBeam(const base::samples::SonarBeam& beam,
 			base::samples::RigidBodyState sonar_state);
 	

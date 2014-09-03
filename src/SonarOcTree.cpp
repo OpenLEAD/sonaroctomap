@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <boost/concept_check.hpp>
 #include <octomap/math/Utils.h>
 #include <octomap/math/Vector3.h>
 #include <octomap/math/Quaternion.h>
@@ -67,7 +68,7 @@ const double PhiMax= M_PI*874/1800;
 const double ThetaMin = -M_PI*315/1800;
 const double ThetaMax = M_PI*290/1800;
 
-bool SonarOcTree::CreateBin(double octo_resolution, std::string filename, std::string varname, int bin, double bearing, double alpha, double beta ){
+bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, double alpha, double beta ){
   struct stat buffer; 
   if(stat (filename.c_str(), &buffer))
     throw std::runtime_error( "No "+filename+" file detected." );
@@ -186,22 +187,31 @@ bool SonarOcTree::CreateBin(double octo_resolution, std::string filename, std::s
   std::cout<< "(0,0) - " << ((double*)matvar->data)[((int)trunc((0.001-PhiMin)*kstep)) +  Nrow*(int)trunc((0.001-ThetaMin)*kstep)] << std::endl;
   std::cout<< "(0,0)[686,315] - " << ((double*)matvar->data)[686 + Nrow*315] << std::endl;
   */
-  unsigned long long voxels = (endkey[0] - startkey[0]);
-  voxels *= (endkey[1] - startkey[1]);
-  voxels *= (endkey[2] - startkey[2]);
+
+//   unsigned long long voxels = (endkey[0] - startkey[0]);
+//   voxels *= (endkey[1] - startkey[1]);
+//   voxels *= (endkey[2] - startkey[2]);
+//   
+//   std::ostringstream ss;
+//   ss.imbue(std::locale("en_US.UTF-8"));
+//   ss << voxels;
   
-  std::ostringstream ss;
-  ss.imbue(std::locale("en_US.UTF-8"));
-  ss << voxels;
+  
+  
 //   ss << (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
   
-  std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") size ["<< endkey[0] - startkey[0] << 
-							  ", " << endkey[1] - startkey[1] << 
-							  ", " <<  endkey[2] - startkey[2] << "] = " << ss.str() << " voxels" << std::endl;
-  
+//   std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") size ["<< endkey[0] - startkey[0] << 
+// 							  ", " << endkey[1] - startkey[1] << 
+// 							  ", " <<  endkey[2] - startkey[2] << "] = " << ss.str() << " voxels" << std::endl;
+//   
 //   double normalizer=0;
+  
+  
+  
+/*  
+  
   struct timeval start, end;
-  gettimeofday(&start, NULL);
+  gettimeofday(&start, NULL);*/
 							  
   for(int stepX=startkey[0]; stepX<=endkey[0]; stepX++)
   for(int stepY=startkey[1]; stepY<=endkey[1]; stepY++)
@@ -235,8 +245,16 @@ bool SonarOcTree::CreateBin(double octo_resolution, std::string filename, std::s
     
     this->updateNode(stepkey, (float) ((double*)matvar->data)[row + Nrow*col]);//logodds(((double*)matvar->data)[row + Nrow*col]));
   }
-  gettimeofday(&end, NULL);
-/*  
+  
+  
+  
+  
+//   gettimeofday(&end, NULL);
+
+  
+  
+  
+  /*  
   std::cout<< "Normalizing" << std::endl;
   
   float updater = logodds(1.0/(1.0+normalizer));
@@ -247,12 +265,15 @@ bool SonarOcTree::CreateBin(double octo_resolution, std::string filename, std::s
   */
 //   double voxels = (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
   
-  unsigned long long useconds = end.tv_sec - start.tv_sec;
-  useconds*=1000000;
-  useconds+=end.tv_usec - start.tv_usec;
-
-  std::cout<< voxels/useconds << " Mega voxels per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
-  std::cout<< "DONE" << std::endl << std::endl;
+  
+  
+  
+//   unsigned long long useconds = end.tv_sec - start.tv_sec;
+//   useconds*=1000000;
+//   useconds+=end.tv_usec - start.tv_usec;
+// 
+//   std::cout<< voxels/useconds << " Mega voxels per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
+//   std::cout<< "DONE" << std::endl << std::endl;
   Mat_VarFree(matvar);
   Mat_Close(openmatfp);
   return true;
@@ -287,6 +308,26 @@ bool SonarOcTree::insertBinsRay(std::vector<uint8_t> beam_vector,
 	}
 
 	return true;
+}
+
+bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
+		base::samples::RigidBodyState& sonar_state){
+  
+  double length = beam.speed_of_sound * beam.sampling_interval;
+  
+  for(int i = 0; i <= beam.beam.size(); i++)
+    rbinlimits[i] =  i * length;
+  
+  for(int i = 0; i < beam.beam.size(); i++){
+    float poweroffset = beam.beam[i]*80.0/255.0;
+    if (poweroffset == 0)
+      continue;
+    this->CreateBin( "ResizeRR.mat", "ResizeRR", i, beam.bearing.rad, poweroffset );
+    
+  }
+  
+  
+  
 }
 
 bool SonarOcTree::insertBeam(const base::samples::SonarBeam& beam,
