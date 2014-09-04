@@ -71,10 +71,7 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
   matvar = Mat_VarRead(openmatfp,varname.c_str());
   std::cout << ((double*)matvar->data)[0] << std::endl;
   
-//   Mat_VarPrint(matvar,0);
-  
-  
-  
+  Mat_VarPrint(matvar,0);
   
   base::Matrix3d Pantilt;
   base::Vector3d Backcorners[4];
