@@ -91,8 +91,7 @@ int main(int argc, char** argv) {
 	
 	for(int i=0;i<150;i++){
 	  std::cout << i << std::endl;
-	  sonarCube1->CreateBin(0.2,"ResizeRR.mat","ResizeRR",i);}
-	  
+	  sonarCube1->CreateBin("ResizeRR.mat","ResizeRR",i);}
 	  
 // 	  sonarCube1->CreateBinPointCloud(0.2,"ResizeRR.mat","ResizeRR",50);
 // 	  sonarCube1->CreateBinPointCloud(0.2,"ResizeRR.mat","ResizeRR",52);

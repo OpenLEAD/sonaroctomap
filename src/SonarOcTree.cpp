@@ -68,7 +68,17 @@ const double PhiMax= M_PI*874/1800;
 const double ThetaMin = -M_PI*315/1800;
 const double ThetaMax = M_PI*290/1800;
 
-bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, double alpha, double beta ){
+bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, double alpha, double beta  ){
+  base::Matrix3d Pantilt;
+  
+  Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
+	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY())
+	    * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
+	    
+  this->CreateBin( filename,  varname, bin, bearing, offset, Pantilt );
+}
+
+bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, base::Matrix3d& Pantilt ){
   struct stat buffer; 
   if(stat (filename.c_str(), &buffer))
     throw std::runtime_error( "No "+filename+" file detected." );
@@ -78,16 +88,11 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
   openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
   matvar = Mat_VarRead(openmatfp,varname.c_str());
   
-  base::Matrix3d Pantilt;
   base::Vector3d Backcorners[4];
   base::Vector3d Frontcorners[4];
   
   int Nrow = matvar->dims[0];
   int Ncol = matvar->dims[1];
-  
-  Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
-	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY())
-	    * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
 
 //   std::cout << Pantilt << std::endl;
   //TODO conferir essas constantes
@@ -312,6 +317,8 @@ bool SonarOcTree::insertBinsRay(std::vector<uint8_t> beam_vector,
 
 bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
 		base::samples::RigidBodyState& sonar_state){
+  
+  sonar_state.getTransform();
   
   double length = beam.speed_of_sound * beam.sampling_interval;
   

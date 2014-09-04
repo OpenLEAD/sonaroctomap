@@ -58,6 +58,9 @@ public:
 	 bool lazy_eval);*/
 
 	bool CreateBin(std::string filename, std::string varname, int bin, 
+		       double bearing, float offset, base::Matrix3d& Pantilt );
+	
+	bool CreateBin(std::string filename, std::string varname, int bin, 
 		       double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
 	bool insertBinsRay(std::vector<uint8_t> beam_vector,
