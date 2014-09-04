@@ -1,6 +1,10 @@
 #include <sonaroctomap/SonarOcTree.hpp>
 #include "matio.h"
 #include <Eigen/Dense>
+#include <sys/time.h>
+#include <stdexcept>
+#include <sys/stat.h>
+#include <boost/concept_check.hpp>
 #include <octomap/math/Utils.h>
 #include <octomap/math/Vector3.h>
 #include <octomap/math/Quaternion.h>
@@ -36,7 +40,7 @@ for(int axis = 0; axis < 3; axis++){
   
 octomath::Vector3 eigen2octoVector(base::Vector3d vec)
 {
-  return octomath::Vector3(vec.x(),vec.y(),vec.z());
+  return octomath::Vector3(vec[0],vec[1],vec[2]);
 }
 
 octomath::Quaternion eigen3octoQuaternion(base::Quaterniond q)
@@ -64,43 +68,55 @@ const double PhiMax= M_PI*874/1800;
 const double ThetaMin = -M_PI*315/1800;
 const double ThetaMax = M_PI*290/1800;
 
-bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filename, std::string varname, int bin){
+bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, double alpha, double beta  ){
+  base::Matrix3d Pantilt;
+  
+  Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
+	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY())
+	    * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
+	    
+  this->CreateBin( filename,  varname, bin, bearing, offset, Pantilt );
+}
+
+bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, base::Matrix3d& Pantilt ){
+  struct stat buffer; 
+  if(stat (filename.c_str(), &buffer))
+    throw std::runtime_error( "No "+filename+" file detected." );
+    
   mat_t *openmatfp;
   matvar_t *matvar;
   openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
   matvar = Mat_VarRead(openmatfp,varname.c_str());
-  std::cout << ((double*)matvar->data)[0] << std::endl;
   
+<<<<<<< HEAD
   Mat_VarPrint(matvar,0);
   
   base::Matrix3d Pantilt;
+=======
+>>>>>>> f968fc6b84aacd9c9332e1eb5b18c7d262649f9a
   base::Vector3d Backcorners[4];
   base::Vector3d Frontcorners[4];
-  double tangentplanegain;
-  double alpha = 0;
-  double beta = 0;
+  
   int Nrow = matvar->dims[0];
   int Ncol = matvar->dims[1];
-  
-  Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
-	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY());
 
-  std::cout << Pantilt << std::endl;
+//   std::cout << Pantilt << std::endl;
   //TODO conferir essas constantes
   double thetalimits[]={ThetaMin,ThetaMax};
   double philimits[]={PhiMin,PhiMax};
-  double rbinlimits[]={1,4,6,8,10,12,14,16};
   
   double thetaM = (thetalimits[1]+thetalimits[0])/2;
   double phiM = (philimits[1]+philimits[0])/2;
-
+  
+/*
   std::cout<< "first loop"<<std::endl 
 			  <<"rbinlimits[bin:bin+1] "<<  rbinlimits[bin] << ":" << rbinlimits[bin+1] << std::endl
 			  <<"thetalimits[0:1] "<<  thetalimits[0] << ":" << thetalimits[1] << std::endl
 			  <<"philimits[0:1] "<<  philimits[0] << ":" << philimits[1] << std::endl
 			  <<"thetaM "<<  thetaM << std::endl
-			  <<"phiM "<<  phiM << std::endl << std::endl;
+			  <<"phiM "<<  phiM << std::endl << std::endl;*/
 
+			  
   for(int theta_index=0; theta_index<2; theta_index++)
   for(int phi_index=0; phi_index<2; phi_index++)
   {
@@ -110,9 +126,7 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
     rbinlimits[bin],
     thetalimits[theta_index],
     philimits[phi_index]);	
-/*
-    std::cout<< "dT=" << thetaM-thetalimits[theta_index] << ", dP=" << phiM-philimits[phi_index] << std::endl;
-    std::cout<< "abs(cos(dT))=" << abs(cos(thetaM-thetalimits[theta_index])) << ", cos(dP)=" << cos(phiM-philimits[phi_index]) << std::endl;*/
+    
     sph2cart(Frontcorners[(theta_index << 1) | phi_index],
     (rbinlimits[bin+1]/cos(thetaM-thetalimits[theta_index]))/cos(phiM-philimits[phi_index]),
     thetalimits[theta_index],
@@ -120,55 +134,56 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
 
     //from inertial perspective
     Backcorners[(theta_index << 1) | phi_index] = Pantilt * Backcorners[(theta_index << 1) | phi_index];
-    //std::cout << theta_index << "," <<phi_index << " Backcorners["<< ((theta_index << 1) + phi_index) <<"] " << std::endl << Backcorners[(theta_index << 1) + phi_index] << std::endl << std::endl;
     
     
     Frontcorners[(theta_index << 1) | phi_index] = Pantilt * Frontcorners[(theta_index << 1) | phi_index];
     
   }
-    std::cout << "Backcorners: [" << std::endl;
-    for (int k = 0; k < 4; k++) 
-    std::cout << Backcorners[k] << std::endl << std::endl;
-    std::cout << "]" << std::endl;
-    
-        std::cout << "Frontcorners: [" << std::endl;
-    for (int k = 0; k < 4; k++) 
-    std::cout << Frontcorners[k] << std::endl <<  std::endl;
-    std::cout << "]" << std::endl;
-  
-
-  
   
   double rangexyz[3][2];
-
-
-  std::cout<< "first box guess" << std::endl;
-  std::cout<< "min(Frontcorners[0](1),Backcorners[0](1))" << std::endl;
-  std::cout<< "min("<<Frontcorners[0](1)<<","<<Backcorners[0](1)<<") = "<< std::min(Frontcorners[0](1),Backcorners[0](1)) << std::endl;
-  
   //Initial bounding box guess
   for(int axis=0; axis<3; axis++){
     rangexyz[axis][0]=std::min(Frontcorners[0](axis),Backcorners[0](axis));
     rangexyz[axis][1]=std::max(Frontcorners[0](axis),Backcorners[0](axis));
   }
-  std::cout << "rangexyz = " << std::endl;
-  coutarray(rangexyz,3,2);
-  std::cout << std::endl;
-
-  std::cout<< "computing box" << std::endl;
-  //Bounding box computation
-  for(int corner = 1; corner < 4; corner++){
-    updaterange(rangexyz,Frontcorners[corner]);
-    updaterange(rangexyz,Backcorners[corner]);
-  }
+  
+  
+/*  
+  std::cout << "Backcorners: [" << std::endl;
+  for (int k = 0; k < 4; k++) 
+    std::cout << Backcorners[k] << std::endl << std::endl;
+  std::cout << "]" << std::endl;
+  
+  std::cout << "Frontcorners: [" << std::endl;
+  for (int k = 0; k < 4; k++) 
+    std::cout << Frontcorners[k] << std::endl <<  std::endl;
+  std::cout << "]" << std::endl;
+    
+  std::cout<< "first box guess" << std::endl;
+  std::cout<< "min(Frontcorners[0](1),Backcorners[0](1))" << std::endl;
+  std::cout<< "min("<<Frontcorners[0](1)<<","<<Backcorners[0](1)<<") = "<< std::min(Frontcorners[0](1),Backcorners[0](1)) << std::endl;
   
   std::cout << "rangexyz = " << std::endl;
   coutarray(rangexyz,3,2);
   std::cout << std::endl;
 
+  std::cout<< "computing box" << std::endl;
+  */
 
+  //Bounding box computation
+  for(int corner = 1; corner < 4; corner++){
+    updaterange(rangexyz,Frontcorners[corner]);
+    updaterange(rangexyz,Backcorners[corner]);
+  }
+/*  
+  std::cout << "rangexyz = " << std::endl;
+  coutarray(rangexyz,3,2);
+  std::cout << std::endl;
 
   std::cout<< "side discretization" << std::endl;
+  */
+  
+  
   //Origin (minor corner of the bounding box) and side discretization (number of box between corners)
 
   octomap::OcTreeKey startkey = this->coordToKey(rangexyz[0][0],rangexyz[1][0],rangexyz[2][0]);
@@ -177,20 +192,44 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
   /* filling octomap & angle to matrix index convertions */
 
   const double kstep = 1800/M_PI;
-  bool dummy=false;
-  double old=0;
+  base::Matrix3d PantiltInverse = Pantilt.transpose();
   
+/*  
   std::cout<< "(0,0) - " << ((double*)matvar->data)[((int)trunc((0.001-PhiMin)*kstep)) +  Nrow*(int)trunc((0.001-ThetaMin)*kstep)] << std::endl;
   std::cout<< "(0,0)[686,315] - " << ((double*)matvar->data)[686 + Nrow*315] << std::endl;
+  */
+
+//   unsigned long long voxels = (endkey[0] - startkey[0]);
+//   voxels *= (endkey[1] - startkey[1]);
+//   voxels *= (endkey[2] - startkey[2]);
+//   
+//   std::ostringstream ss;
+//   ss.imbue(std::locale("en_US.UTF-8"));
+//   ss << voxels;
   
-  std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") from "<< this->keyToCoord(startkey) << " and to "<< this->keyToCoord(endkey) << std::endl;
   
+  
+//   ss << (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
+  
+//   std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") size ["<< endkey[0] - startkey[0] << 
+// 							  ", " << endkey[1] - startkey[1] << 
+// 							  ", " <<  endkey[2] - startkey[2] << "] = " << ss.str() << " voxels" << std::endl;
+//   
+//   double normalizer=0;
+  
+  
+  
+/*  
+  
+  struct timeval start, end;
+  gettimeofday(&start, NULL);*/
+							  
   for(int stepX=startkey[0]; stepX<=endkey[0]; stepX++)
   for(int stepY=startkey[1]; stepY<=endkey[1]; stepY++)
   for(int stepZ=startkey[2]; stepZ<=endkey[2]; stepZ++){
     octomap::OcTreeKey stepkey = octomap::OcTreeKey(stepX,stepY,stepZ);
     octomap::point3d coord = this->keyToCoord(stepkey);
-    
+    base::Vector3d coordfromsonar = PantiltInverse * base::Vector3d(coord.x(),coord.y(),coord.z());
     
     double radius = coord.norm();
 
@@ -198,9 +237,8 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
     if(radius < rbinlimits[bin] || radius > rbinlimits[bin+1])
       continue;
 
-    double phi = atan2( coord.y(), coord.x());
-
-    double theta = asin(coord.z()/radius);
+    double theta = atan2( coordfromsonar[1], coordfromsonar[0]);
+    double phi = asin(coordfromsonar[2]/radius);
 
     int col = trunc((theta-ThetaMin)*kstep);
     if(col < 0 || col >= Ncol)	
@@ -209,17 +247,44 @@ bool SonarOcTree::CreateBinPointCloud(double octo_resolution, std::string filena
     int row = trunc((phi-PhiMin)*kstep);
     if(row < 0 || row >= Nrow)
       continue; 
-
+    
     
     if(((double*)matvar->data)[row + Nrow*col]==0.0)
       continue;
     
-    this->updateNode(stepkey, (float) 	((double*)matvar->data)[row + Nrow*col]);
-  }
+//     normalizer+=((double*)matvar->data)[row + Nrow*col];
     
-  //std::cout<< "MEUS TESTE -> " << ((double*)matvar->data)[matvar->dims[0]*2+1] << std::endl;
-  //Mat_VarPrint(matvar,1);
-  std::cout<< "DONE" << std::endl;
+    this->updateNode(stepkey, (float) ((double*)matvar->data)[row + Nrow*col]);//logodds(((double*)matvar->data)[row + Nrow*col]));
+  }
+  
+  
+  
+  
+//   gettimeofday(&end, NULL);
+
+  
+  
+  
+  /*  
+  std::cout<< "Normalizing" << std::endl;
+  
+  float updater = logodds(1.0/(1.0+normalizer));
+  
+   for (OcTree::leaf_iterator it = this->begin_leafs(), end = this->end_leafs(); it != end; ++it)
+     this->updateNode(it.getKey(),updater);
+  
+  */
+//   double voxels = (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
+  
+  
+  
+  
+//   unsigned long long useconds = end.tv_sec - start.tv_sec;
+//   useconds*=1000000;
+//   useconds+=end.tv_usec - start.tv_usec;
+// 
+//   std::cout<< voxels/useconds << " Mega voxels per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
+//   std::cout<< "DONE" << std::endl << std::endl;
   Mat_VarFree(matvar);
   Mat_Close(openmatfp);
   return true;
@@ -254,6 +319,28 @@ bool SonarOcTree::insertBinsRay(std::vector<uint8_t> beam_vector,
 	}
 
 	return true;
+}
+
+bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
+		base::samples::RigidBodyState& sonar_state){
+  
+  sonar_state.getTransform();
+  
+  double length = beam.speed_of_sound * beam.sampling_interval;
+  
+  for(int i = 0; i <= beam.beam.size(); i++)
+    rbinlimits[i] =  i * length;
+  
+  for(int i = 0; i < beam.beam.size(); i++){
+    float poweroffset = beam.beam[i]*80.0/255.0;
+    if (poweroffset == 0)
+      continue;
+    this->CreateBin( "ResizeRR.mat", "ResizeRR", i, beam.bearing.rad, poweroffset );
+    
+  }
+  
+  
+  
 }
 
 bool SonarOcTree::insertBeam(const base::samples::SonarBeam& beam,
