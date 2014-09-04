@@ -75,7 +75,7 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
 	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY())
 	    * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
 	    
-  this->CreateBin( filename,  varname, bin, bearing, offset, Pantilt );
+  return this->CreateBin( filename,  varname, bin, bearing, offset, Pantilt );
 }
 
 bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, base::Matrix3d& Pantilt ){
@@ -88,12 +88,9 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
   openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
   matvar = Mat_VarRead(openmatfp,varname.c_str());
   
-<<<<<<< HEAD
+
   Mat_VarPrint(matvar,0);
-  
-  base::Matrix3d Pantilt;
-=======
->>>>>>> f968fc6b84aacd9c9332e1eb5b18c7d262649f9a
+
   base::Vector3d Backcorners[4];
   base::Vector3d Frontcorners[4];
   
@@ -339,7 +336,7 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
     
   }
   
-  
+  return true;
   
 }
 
