@@ -329,9 +329,11 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
     rbinlimits[i] =  i * length;
   
   for(int i = 0; i < beam.beam.size(); i++){
-    float poweroffset = beam.beam[i]*80.0/255.0;
-    if (poweroffset == 0)
+    if (beam.beam[i] == 0)
       continue;
+    
+    float poweroffset = beam.beam[i]*80.0/255.0;
+    
     this->CreateBin( "ResizeRR.mat", "ResizeRR", i, beam.bearing.rad, poweroffset );
     
   }

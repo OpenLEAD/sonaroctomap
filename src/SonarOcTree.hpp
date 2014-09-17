@@ -3,7 +3,7 @@
 
 #include "octomap/OcTree.h"
 #include <string>
-#include "base/samples/SonarBeam.hpp"
+#include <base/samples/SonarBeam.hpp>
 #include <base/samples/RigidBodyState.hpp>
 
 namespace octomap {
