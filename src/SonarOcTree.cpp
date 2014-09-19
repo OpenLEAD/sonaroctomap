@@ -12,6 +12,13 @@
 
 using namespace octomap;
 
+const double value_trh = 30;
+const double empty_prob = 0.1;
+const double full_prob = 0.8;
+
+const float logit_full_prob = logodds(0.8);
+const float logit_empty_prob = logodds(0.1);
+
 inline void sph2cart(base::Vector3d& cartvec, double radius, double theta, double phi){
 	cartvec[0]=radius*cos(phi)*cos(theta);
 	cartvec[1]=radius*cos(phi)*sin(theta);
@@ -220,7 +227,14 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
   
   struct timeval start, end;
   gettimeofday(&start, NULL);*/
-							  
+
+  const float * logitprob;
+  
+  if(offset<value_trh)
+    logitprob = &logit_empty_prob;
+  else
+    logitprob = &logit_full_prob;
+  
   for(int stepX=startkey[0]; stepX<=endkey[0]; stepX++)
   for(int stepY=startkey[1]; stepY<=endkey[1]; stepY++)
   for(int stepZ=startkey[2]; stepZ<=endkey[2]; stepZ++){
@@ -251,7 +265,7 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
     
 //     normalizer+=((double*)matvar->data)[row + Nrow*col];
     
-    this->updateNode(stepkey, (float) ((double*)matvar->data)[row + Nrow*col]);//logodds(((double*)matvar->data)[row + Nrow*col]));
+    this->updateNode(stepkey, (float) (*logitprob + (((double*)matvar->data)[row + Nrow*col]/30.0 - 1)*2.2));//logodds(((double*)matvar->data)[row + Nrow*col]));
   }
   
   
@@ -329,8 +343,8 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
     rbinlimits[i] =  i * length;
   
   for(int i = 0; i < beam.beam.size(); i++){
-    if (beam.beam[i] == 0)
-      continue;
+//     if (beam.beam[i] == 0)
+//       continue;
     
     float poweroffset = beam.beam[i]*80.0/255.0;
     
