@@ -8,6 +8,17 @@
 #include <octomap_wrapper/OctomapWrapper.hpp>
 #include <octomap_wrapper/Conversion.hpp>
 
+/* WORKAROUND */
+#include <pthread.h>
+void junk() {	
+  int i;
+  i=pthread_getconcurrency();
+};
+/* WORKAROUND */
+
+
+
+
 void print_query_info(octomath::Vector3 query, octomap::OcTreeNode* node) {
 	if (node != NULL) {
 		std::cout << "occupancy probability at " << query << ":\t "
@@ -88,10 +99,22 @@ void cubeTreeCreator(octomap::SonarOcTree &tree,octomap::point3d origin, double 
 int main(int argc, char** argv) {
         
 	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.2);
+	base::samples::RigidBodyState sonar_state;
+	base::Pose sonar_pose;
+	sonar_pose.orientation.Identity();
+	sonar_state.setPose(sonar_pose);
 	
-	for(int i=0;i<150;i++){
+	for(int i=0;i<30;i++){
+	  sonar_state.position = base::Position(0,0,0);
 	  std::cout << i << std::endl;
-	  sonarCube1->CreateBin("ResizeRR.mat","ResizeRR",i);}
+	  sonarCube1->CreateBin("ResizeRR.mat","ResizeRR",i,base::Angle::deg2Rad(i),32,sonar_state);
+	  
+	}
+	  
+// 	for(int i=15;i<30;i++){
+// 	  sonar_state.position = base::Position(0,0,(int)1);
+// 	  std::cout << i << std::endl;
+// 	  sonarCube1->CreateBin("ResizeRR.mat","ResizeRR",i,base::Angle::deg2Rad(i),32,sonar_state);}
 	  
 // 	  sonarCube1->CreateBinPointCloud(0.2,"ResizeRR.mat","ResizeRR",50);
 // 	  sonarCube1->CreateBinPointCloud(0.2,"ResizeRR.mat","ResizeRR",52);

@@ -58,7 +58,7 @@ public:
 	 bool lazy_eval);*/
 
 	bool CreateBin(std::string filename, std::string varname, int bin, 
-		       double bearing, float offset, base::Matrix3d& Pantilt );
+		       double bearing, float offset, base::samples::RigidBodyState sonar_state );
 	
 	bool CreateBin(std::string filename, std::string varname, int bin, 
 		       double bearing = 0, float offset=0, double alpha = 0, double beta = 0);

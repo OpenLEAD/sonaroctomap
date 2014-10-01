@@ -76,35 +76,38 @@ const double ThetaMin = -M_PI*315/1800;
 const double ThetaMax = M_PI*290/1800;
 
 bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, double alpha, double beta  ){
-  base::Matrix3d Pantilt;
+  base::samples::RigidBodyState sonar_state;
+  base::Pose sonar_pose;
+  //base::Matrix3d Pantilt;
   
-  Pantilt = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
+  sonar_pose.orientation = Eigen::AngleAxisd(alpha, Eigen::MatrixBase<base::Vector3d>::UnitZ())
 	    * Eigen::AngleAxisd(beta, Eigen::MatrixBase<base::Vector3d>::UnitY())
 	    * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
 	    
-  return this->CreateBin( filename,  varname, bin, bearing, offset, Pantilt );
+  
+  
+  sonar_state.setPose(sonar_pose);
+	    
+  return this->CreateBin( filename,  varname, bin, 0, value_trh+1, sonar_state );
 }
 
-bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, base::Matrix3d& Pantilt ){
+bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, double bearing, float offset, base::samples::RigidBodyState sonar_state ){
   struct stat buffer; 
   if(stat (filename.c_str(), &buffer))
-    throw std::runtime_error( "No "+filename+" file detected." );
+    throw std::runtime_error( "No "+filename+" file detected in the current folder." );
     
+  sonar_state.orientation = sonar_state.orientation * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
   mat_t *openmatfp;
   matvar_t *matvar;
   openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
   matvar = Mat_VarRead(openmatfp,varname.c_str());
   
-
-  Mat_VarPrint(matvar,0);
-
   base::Vector3d Backcorners[4];
   base::Vector3d Frontcorners[4];
   
   int Nrow = matvar->dims[0];
   int Ncol = matvar->dims[1];
-
-//   std::cout << Pantilt << std::endl;
+  
   //TODO conferir essas constantes
   double thetalimits[]={ThetaMin,ThetaMax};
   double philimits[]={PhiMin,PhiMax};
@@ -112,14 +115,6 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
   double thetaM = (thetalimits[1]+thetalimits[0])/2;
   double phiM = (philimits[1]+philimits[0])/2;
   
-/*
-  std::cout<< "first loop"<<std::endl 
-			  <<"rbinlimits[bin:bin+1] "<<  rbinlimits[bin] << ":" << rbinlimits[bin+1] << std::endl
-			  <<"thetalimits[0:1] "<<  thetalimits[0] << ":" << thetalimits[1] << std::endl
-			  <<"philimits[0:1] "<<  philimits[0] << ":" << philimits[1] << std::endl
-			  <<"thetaM "<<  thetaM << std::endl
-			  <<"phiM "<<  phiM << std::endl << std::endl;*/
-
 			  
   for(int theta_index=0; theta_index<2; theta_index++)
   for(int phi_index=0; phi_index<2; phi_index++)
@@ -137,10 +132,10 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
     philimits[phi_index]);
 
     //from inertial perspective
-    Backcorners[(theta_index << 1) | phi_index] = Pantilt * Backcorners[(theta_index << 1) | phi_index];
+    Backcorners[(theta_index << 1) | phi_index] = sonar_state.getTransform() * Backcorners[(theta_index << 1) | phi_index];
     
     
-    Frontcorners[(theta_index << 1) | phi_index] = Pantilt * Frontcorners[(theta_index << 1) | phi_index];
+    Frontcorners[(theta_index << 1) | phi_index] = sonar_state.getTransform() * Frontcorners[(theta_index << 1) | phi_index];
     
   }
   
@@ -150,42 +145,12 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
     rangexyz[axis][0]=std::min(Frontcorners[0](axis),Backcorners[0](axis));
     rangexyz[axis][1]=std::max(Frontcorners[0](axis),Backcorners[0](axis));
   }
-  
-  
-/*  
-  std::cout << "Backcorners: [" << std::endl;
-  for (int k = 0; k < 4; k++) 
-    std::cout << Backcorners[k] << std::endl << std::endl;
-  std::cout << "]" << std::endl;
-  
-  std::cout << "Frontcorners: [" << std::endl;
-  for (int k = 0; k < 4; k++) 
-    std::cout << Frontcorners[k] << std::endl <<  std::endl;
-  std::cout << "]" << std::endl;
-    
-  std::cout<< "first box guess" << std::endl;
-  std::cout<< "min(Frontcorners[0](1),Backcorners[0](1))" << std::endl;
-  std::cout<< "min("<<Frontcorners[0](1)<<","<<Backcorners[0](1)<<") = "<< std::min(Frontcorners[0](1),Backcorners[0](1)) << std::endl;
-  
-  std::cout << "rangexyz = " << std::endl;
-  coutarray(rangexyz,3,2);
-  std::cout << std::endl;
-
-  std::cout<< "computing box" << std::endl;
-  */
 
   //Bounding box computation
   for(int corner = 1; corner < 4; corner++){
     updaterange(rangexyz,Frontcorners[corner]);
     updaterange(rangexyz,Backcorners[corner]);
   }
-/*  
-  std::cout << "rangexyz = " << std::endl;
-  coutarray(rangexyz,3,2);
-  std::cout << std::endl;
-
-  std::cout<< "side discretization" << std::endl;
-  */
   
   
   //Origin (minor corner of the bounding box) and side discretization (number of box between corners)
@@ -196,29 +161,22 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
   /* filling octomap & angle to matrix index convertions */
 
   const double kstep = 1800/M_PI;
-  base::Matrix3d PantiltInverse = Pantilt.transpose();
+  Eigen::Affine3d PantiltInverse = sonar_state.getTransform().inverse();
   
-/*  
-  std::cout<< "(0,0) - " << ((double*)matvar->data)[((int)trunc((0.001-PhiMin)*kstep)) +  Nrow*(int)trunc((0.001-ThetaMin)*kstep)] << std::endl;
-  std::cout<< "(0,0)[686,315] - " << ((double*)matvar->data)[686 + Nrow*315] << std::endl;
-  */
+  unsigned long long voxels = (endkey[0] - startkey[0]);
+  voxels *= (endkey[1] - startkey[1]);
+  voxels *= (endkey[2] - startkey[2]);
+  
+  std::ostringstream ss;
+  ss.imbue(std::locale("en_US.UTF-8"));
+  ss << voxels;
+  ss << (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
+  std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") size ["<< endkey[0] - startkey[0] << 
+							  ", " << endkey[1] - startkey[1] << 
+							  ", " <<  endkey[2] - startkey[2] << "] = " << ss.str() << " voxels" << std::endl;*/
 
-//   unsigned long long voxels = (endkey[0] - startkey[0]);
-//   voxels *= (endkey[1] - startkey[1]);
-//   voxels *= (endkey[2] - startkey[2]);
-//   
-//   std::ostringstream ss;
-//   ss.imbue(std::locale("en_US.UTF-8"));
-//   ss << voxels;
-  
-  
-  
-//   ss << (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
-  
-//   std::cout<< "Octofill (" << Nrow << "x" << Ncol << ") size ["<< endkey[0] - startkey[0] << 
-// 							  ", " << endkey[1] - startkey[1] << 
-// 							  ", " <<  endkey[2] - startkey[2] << "] = " << ss.str() << " voxels" << std::endl;
-//   
+
+
 //   double normalizer=0;
   
   
@@ -242,7 +200,7 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
     octomap::point3d coord = this->keyToCoord(stepkey);
     base::Vector3d coordfromsonar = PantiltInverse * base::Vector3d(coord.x(),coord.y(),coord.z());
     
-    double radius = coord.norm();
+    double radius = coordfromsonar.norm();
 
     
     if(radius < rbinlimits[bin] || radius > rbinlimits[bin+1])
@@ -264,7 +222,8 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
       continue;
     
 //     normalizer+=((double*)matvar->data)[row + Nrow*col];
-    
+  
+   
     this->updateNode(stepkey, (float) (*logitprob + (((double*)matvar->data)[row + Nrow*col]/30.0 - 1)*2.2));//logodds(((double*)matvar->data)[row + Nrow*col]));
   }
   
@@ -287,15 +246,14 @@ bool SonarOcTree::CreateBin(std::string filename, std::string varname, int bin, 
   */
 //   double voxels = (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
   
-  
-  
-  
-//   unsigned long long useconds = end.tv_sec - start.tv_sec;
-//   useconds*=1000000;
-//   useconds+=end.tv_usec - start.tv_usec;
-// 
-//   std::cout<< voxels/useconds << " Mega voxels per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
-//   std::cout<< "DONE" << std::endl << std::endl;
+/*  
+  unsigned long long useconds = end.tv_sec - start.tv_sec;
+  useconds*=1000000;
+  useconds+=end.tv_usec - start.tv_usec;
+
+  std::cout<< voxels/useconds << " Mega voxels per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
+  std::cout<< "DONE" << std::endl << std::endl;  */
+
   Mat_VarFree(matvar);
   Mat_Close(openmatfp);
   return true;
@@ -335,8 +293,6 @@ bool SonarOcTree::insertBinsRay(std::vector<uint8_t> beam_vector,
 bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
 		base::samples::RigidBodyState& sonar_state){
   
-  sonar_state.getTransform();
-  
   double length = beam.speed_of_sound * beam.sampling_interval;
   
   for(int i = 0; i <= beam.beam.size(); i++)
@@ -348,7 +304,7 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
     
     float poweroffset = beam.beam[i]*80.0/255.0;
     
-    this->CreateBin( "ResizeRR.mat", "ResizeRR", i, beam.bearing.rad, poweroffset );
+    this->CreateBin( "ResizeRR.mat", "ResizeRR", i, beam.bearing.rad, poweroffset, sonar_state );
     
   }
   
