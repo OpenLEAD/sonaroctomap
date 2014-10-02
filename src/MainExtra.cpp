@@ -123,7 +123,7 @@ void cubeTreeCreator(octomap::SonarOcTree &tree,octomap::point3d origin, double 
 
 int main(int argc, char** argv) {
         
-	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.1);/*
+	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.1,"ResizeRR.mat","ResizeRR");/*
 	sonarCube1->CreateBinPointCloud(1,"tester.mat","Tester",1);	
 	sonarCube1->CreateBinPointCloud(1,"ResizeRR.mat","ResizeRR",1);*/
 	

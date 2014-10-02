@@ -4,9 +4,19 @@
 #include <octomap/octomap.h>
 #include <base/Time.hpp>
 #include <sonaroctomap/SonarOcTree.hpp>
+#include <string>
 
 #include <octomap_wrapper/OctomapWrapper.hpp>
 #include <octomap_wrapper/Conversion.hpp>
+
+
+
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/normal_distribution.hpp>
+#include <boost/random/variate_generator.hpp>
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>       /* time */
+
 
 /* WORKAROUND */
 #include <pthread.h>
@@ -97,24 +107,131 @@ void cubeTreeCreator(octomap::SonarOcTree &tree,octomap::point3d origin, double 
 }
 
 int main(int argc, char** argv) {
+  
+	typedef boost::mt19937                     ENG;    // Mersenne Twister
+	typedef boost::normal_distribution<double> DIST;   // Normal Distribution
+	typedef boost::variate_generator<ENG,DIST> GEN;    // Variate generator
+  
+	ENG  eng;
+	DIST dist(0,0.2);
+	GEN  gen(eng,dist);
+	
+	std::srand (std::time(NULL));
+
+	
         
-	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.2);
+	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.2,"ResizeRR.mat","ResizeRR");
 	base::samples::RigidBodyState sonar_state;
 	base::Pose sonar_pose;
 	sonar_pose.orientation.Identity();
 	sonar_state.setPose(sonar_pose);
 	
-	for(int i=0;i<30;i++){
-	  sonar_state.position = base::Position(0,0,0);
-	  std::cout << i << std::endl;
-	  sonarCube1->CreateBin("ResizeRR.mat","ResizeRR",i,base::Angle::deg2Rad(i),32,sonar_state);
+	int p;
+	
+	for(int voltas=0;voltas<20;voltas++){
+	
+	  struct timeval start, end;
+	  gettimeofday(&start, NULL);
+	  
+	for(int i=voltas*10;i<10*(voltas+1);i++){
+	  
+  
+	  sonar_state.orientation = Eigen::AngleAxisd(rand()%360, Eigen::MatrixBase<base::Vector3d>::UnitZ()) * Eigen::AngleAxisd(base::Angle::deg2Rad(rand()%360), Eigen::MatrixBase<base::Vector3d>::UnitY());
+	  
+	  sonar_state.position = sonar_state.orientation.toRotationMatrix() *base::Position(10+(p=rand()%5)+gen(),0,0);
+	  
+	  //std::cout << i;	
+	  
+	  #pragma omp parallel num_threads(6)
+	  {
+	  #pragma omp for schedule(dynamic)
+	  for(int bin=0;bin<(40+5*p);bin++)
+	    sonarCube1->CreateBin(bin,base::Angle::deg2Rad(180),10,sonar_state);
+	  }
+	  
+	  sonarCube1->CreateBin(40+5*p,base::Angle::deg2Rad(180),32,sonar_state);
+	  
+	  
+	  gettimeofday(&end, NULL);
+	  unsigned long long useconds =end.tv_sec - start.tv_sec;
+	  useconds *= 1000000;
+	  useconds +=  end.tv_usec - start.tv_usec;
+	  
+	  std::cout<< (end.tv_sec - start.tv_sec) << "; "<< std::flush;
+
+	  //std::cout<< " - " << ((double) (i+1)*1000000)/useconds << " beams per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
+	}
+	std::stringstream ss;
+	ss << voltas;
+	  
+	sonarCube1->write("treeExtraRandRPProgressiveNewM_"+ss.str()+".ot");
+        std::cout << "treeExtraRandRPProgressiveNewM_"+ss.str()+".ot"<< " written" << std::endl;
 	  
 	}
+	
+		
+		
+		
+		
+		
+		
+/*		
+	for(int voltas=0;voltas<10;voltas++){
+	
+	  struct timeval start, end;
+	  gettimeofday(&start, NULL);
 	  
+	for(int i=voltas*360;i<360*(voltas+1);i++){
+	  
+  
+	  
+	  
+	  sonar_state.position = 10*base::Position(cos(base::Angle::deg2Rad(i)),sin(base::Angle::deg2Rad(i)),0);
+	  
+	  //std::cout << i;	
+	  
+	  #pragma omp parallel num_threads(6)
+	  {
+	  #pragma omp for schedule(dynamic)
+	  for(int bin=0;bin<40;bin++)
+	    sonarCube1->CreateBin(bin,base::Angle::deg2Rad(180+i),10,sonar_state);
+	  }
+	  sonarCube1->CreateBin(40,base::Angle::deg2Rad(180+i),32,sonar_state);
+	  
+	  
+	  gettimeofday(&end, NULL);
+	  unsigned long long useconds =end.tv_sec - start.tv_sec;
+	  useconds *= 1000000;
+	  useconds +=  end.tv_usec - start.tv_usec;
+	  
+	  std::cout<< (end.tv_sec - start.tv_sec) << "; "<< std::flush;
+
+	  //std::cout<< " - " << ((double) (i+1)*1000000)/useconds << " beams per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
+	  
+	}
+	std::stringstream ss;
+	ss << (voltas+5);
+	  
+	sonarCube1->write("treeExtraRand"+ss.str()+".ot");
+        std::cout << "treeExtraRand"+ss.str()+".ot"<< " written" << std::endl;
+	  
+	}*/
+	  
+
+
+
+
+
+
+
+
+
+
+
 // 	for(int i=15;i<30;i++){
 // 	  sonar_state.position = base::Position(0,0,(int)1);
 // 	  std::cout << i << std::endl;
-// 	  sonarCube1->CreateBin("ResizeRR.mat","ResizeRR",i,base::Angle::deg2Rad(i),32,sonar_state);}
+// 	  sonarCube1->CreateBin("ResizeRR.mat","ResizeRR",i,base::Angle:int:deg2Rad(i),32,sonar_state);}
 	  
 // 	  sonarCube1->CreateBinPointCloud(0.2,"ResizeRR.mat","ResizeRR",50);
 // 	  sonarCube1->CreateBinPointCloud(0.2,"ResizeRR.mat","ResizeRR",52);

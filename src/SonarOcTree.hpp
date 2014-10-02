@@ -2,9 +2,15 @@
 #define SONAR_OCTREE_HPP
 
 #include "octomap/OcTree.h"
+#include "matio.h"
 #include <string>
 #include <base/samples/SonarBeam.hpp>
 #include <base/samples/RigidBodyState.hpp>
+
+#include <stdexcept>
+#include <sys/stat.h>
+#include <boost/concept_check.hpp>
+#include <octomap/math/Utils.h>
 
 namespace octomap {
 
@@ -16,13 +22,25 @@ namespace octomap {
 class SonarOcTree: public OcTree {
   
 	double rbinlimits[500];
+	matvar_t *matvar;
+	mat_t *openmatfp;
 public:
 
 	/// Default constructor, sets resolution of leafs
-	SonarOcTree(double resolution) :
+	SonarOcTree(double resolution,std::string filename, std::string varname) :
 			OcTree(resolution) {
 	for(int i=0; i<=373; i++)
-	  rbinlimits[i]=(0.2*i+0.3);
+	  rbinlimits[i]=(0.2*i);
+	
+	struct stat buffer; 
+	if(stat (filename.c_str(), &buffer))
+	  throw std::runtime_error( "No "+filename+" file detected in the current folder." );
+	
+	
+	openmatfp = Mat_Open(filename.c_str(),MAT_ACC_RDONLY);
+	matvar = Mat_VarRead(openmatfp,varname.c_str());
+	this->setClampingThresMax(0.9999);
+	this->setClampingThresMin(0.0001);
 	}
 	;
 
@@ -37,13 +55,15 @@ public:
 	;
 
 	~SonarOcTree() {
+	Mat_VarFree(matvar);
+	Mat_Close(openmatfp);
 	}
 	;
 
 	/// virtual constructor: creates a new object of same type
 	/// (Covariant return type requires an up-to-date compiler)
 	SonarOcTree* create() const {
-		return new SonarOcTree(resolution);
+		return new SonarOcTree(resolution,"ResizeRR.mat","ResizeRR");
 	}
 
 	std::string getTreeType() const {
@@ -57,11 +77,9 @@ public:
 	 const point3d& end, double maxrange, float log_odd_update,
 	 bool lazy_eval);*/
 
-	bool CreateBin(std::string filename, std::string varname, int bin, 
-		       double bearing, float offset, base::samples::RigidBodyState sonar_state );
+	bool CreateBin(int bin, double bearing, float offset, base::samples::RigidBodyState sonar_state );
 	
-	bool CreateBin(std::string filename, std::string varname, int bin, 
-		       double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
+	bool CreateBin(int bin, double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
 	bool insertBinsRay(std::vector<uint8_t> beam_vector,
 			octomath::Vector3 origin, octomath::Vector3 ray_direction,
