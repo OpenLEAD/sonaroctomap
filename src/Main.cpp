@@ -148,7 +148,6 @@ int main(int argc, char** argv) {
 	  for(int bin=0;bin<(40+5*p);bin++)
 	    sonarCube1->CreateBin(bin,base::Angle::deg2Rad(180),10,sonar_state);
 	  }
-	  
 	  sonarCube1->CreateBin(40+5*p,base::Angle::deg2Rad(180),32,sonar_state);
 	  
 	  
@@ -164,8 +163,8 @@ int main(int argc, char** argv) {
 	std::stringstream ss;
 	ss << voltas;
 	  
-	sonarCube1->write("treeExtraRandRPProgressiveNewM_"+ss.str()+".ot");
-        std::cout << "treeExtraRandRPProgressiveNewM_"+ss.str()+".ot"<< " written" << std::endl;
+	sonarCube1->write("treeExtraRandRPProgressiveNewM"+ss.str()+".ot");
+        std::cout << "treeExtraRandRPProgressiveNewM"+ss.str()+".ot"<< " written" << std::endl;
 	  
 	}
 	

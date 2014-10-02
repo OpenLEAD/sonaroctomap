@@ -176,7 +176,6 @@ bool SonarOcTree::CreateBin( int bin, double bearing, float offset, base::sample
   else
     logitprob = &logit_full_prob;
   
-
   for(int stepX=startkey[0]; stepX<=endkey[0]; stepX++)
   for(int stepY=startkey[1]; stepY<=endkey[1]; stepY++)
   for(int stepZ=startkey[2]; stepZ<=endkey[2]; stepZ++){
@@ -281,8 +280,10 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
   for(int i = 0; i <= beam.beam.size(); i++)
     rbinlimits[i] =  i * length;
   
+  
   #pragma omp parallel num_threads(6)
   {
+    
   #pragma omp for schedule(dynamic)
   for(int i = 0; i < beam.beam.size(); i++){
 //     if (beam.beam[i] == 0)
