@@ -13,6 +13,8 @@
 #include <octomap/math/Utils.h>
 
 namespace octomap {
+  
+void temp(OcTreeNode* temp1, double* temp2){}
 
 /** 
  *Extension of the Octree class with methods to use sonars
@@ -24,10 +26,11 @@ class SonarOcTree: public OcTree {
 	double rbinlimits[500];
 	matvar_t *matvar;
 	mat_t *openmatfp;
+	const float * logitprob;
 public:
 
 	/// Default constructor, sets resolution of leafs
-	SonarOcTree(double resolution,std::string filename, std::string varname) :
+	SonarOcTree(double resolution,std::string filename = "ResizeRR.mat", std::string varname = "ResizeRR") :
 			OcTree(resolution) {
 	for(int i=0; i<=373; i++)
 	  rbinlimits[i]=(0.2*i);
@@ -77,7 +80,7 @@ public:
 	 const point3d& end, double maxrange, float log_odd_update,
 	 bool lazy_eval);*/
 
-	bool CreateBin(int bin, double bearing, float offset, base::samples::RigidBodyState sonar_state );
+	bool CreateBin( int bin, double bearing,   void (*fnode)(OcTreeNode*,double*), base::samples::RigidBodyState sonar_state );
 	
 	bool CreateBin(int bin, double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
