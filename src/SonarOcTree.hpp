@@ -29,8 +29,8 @@ class SonarOcTree: public OcTree {
 
 private:
 	//variables to use in the evaluateSonarBeam method
-        double sum_alpha_occ;
-	double sum_alpha2;
+        double sum_decay_occ;
+	double sum_decay2;
 	const float * logitprob;
 
 public:
@@ -109,6 +109,8 @@ public:
 	double compareTrees(const SonarOcTree& tree, base::Vector3d& tree_position, base::Quaterniond& tree_orientation);
 	
 	double evaluateSonarBeam( const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam);
+	
+	void calculateIntensity(octomap::OcTreeNode* node, double* decay);
 
 };
 

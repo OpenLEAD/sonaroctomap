@@ -1,4 +1,4 @@
-#include <sonaroctomap/SonarOcTree.hpp>
+#include "SonarOcTree.hpp"
 #include <Eigen/Dense>
 #include <sys/time.h>
 #include <octomap/math/Vector3.h>
@@ -397,6 +397,8 @@ double SonarOcTree::compareTrees(const SonarOcTree& tree, base::Vector3d& tree_p
 double octomap::SonarOcTree::evaluateSonarBeam(const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam)
 {
   double weight = 0;
+  sum_decay_occ = 0;
+  sum_decay2 = 0;
   
            
   std::vector<uint8_t> projected_beam;
@@ -407,7 +409,7 @@ double octomap::SonarOcTree::evaluateSonarBeam(const base::samples::RigidBodySta
       //funcao do elael recebendo current_bin, sonar_beam.bearing, rbs, tlvz o valor do bin e o ponteiro para minha funcao 
   }    
   
-  double projected_intensity = sum_alpha_occ/sum_alpha2;
+  double projected_intensity = sum_decay_occ/sum_decay2;
   
   projected_intensity = floor(projected_intensity);
   
@@ -416,10 +418,14 @@ double octomap::SonarOcTree::evaluateSonarBeam(const base::samples::RigidBodySta
   
  
   return weight;
-  
-  
 }
 
+void SonarOcTree::calculateIntensity(OcTreeNode* node, double* decay)
+{
+  double occupancy = node->getOccupancy();
+  sum_decay_occ += *decay*occupancy;
+  sum_decay2 += *decay*(*decay);
 
+}
 
 
