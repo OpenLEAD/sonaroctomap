@@ -24,6 +24,12 @@ class SonarOcTree: public OcTree {
 	double rbinlimits[500];
 	matvar_t *matvar;
 	mat_t *openmatfp;
+private:
+	//variables to use in the evaluateSonarBeam method
+        double sum_alpha_occ;
+	double sum_alpha2;
+
+
 public:
 
 	/// Default constructor, sets resolution of leafs
@@ -95,9 +101,11 @@ public:
 	bool insertBeam(const base::samples::SonarBeam& beam,
 			base::samples::RigidBodyState sonar_state);
 	
-	bool mergeTrees(octomap::SonarOcTree &tree2,octomap::point3d offset);
+	bool mergeTrees(octomap::SonarOcTree &other,octomap::point3d offset);
 	
-	double compareTrees(const SonarOcTree& tree, base::Vector3d& treePosition, base::Quaterniond& treeOrientation);
+	double compareTrees(const SonarOcTree& tree, base::Vector3d& tree_position, base::Quaterniond& tree_orientation);
+	
+	double evaluateSonarBeam( const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam);
 
 };
 

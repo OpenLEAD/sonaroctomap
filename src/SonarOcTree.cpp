@@ -4,6 +4,7 @@
 #include <octomap/math/Vector3.h>
 #include <octomap/math/Quaternion.h>
 #include <octomap/math/Pose6D.h>
+#include "SonarOcTree.hpp"
 
 using namespace octomap;
 
@@ -339,6 +340,7 @@ bool SonarOcTree::insertBeam(const base::samples::SonarBeam& beam,
 	return true;
 }
 
+
 bool SonarOcTree::mergeTrees(SonarOcTree &tree2,point3d offset){
   tree2.expand();
   
@@ -346,44 +348,44 @@ bool SonarOcTree::mergeTrees(SonarOcTree &tree2,point3d offset){
   {
 	point3d tree2Point = it.getCoordinate();
 	
-	point3d rootPoint = offset + tree2Point; 
+	point3d root_point = offset + tree2Point; 
 
         // check occupancy prob:
         float tree2PointLogOdd = it->getLogOdds();
-	this->updateNode(rootPoint,tree2PointLogOdd,false);
+	this->updateNode(root_point,tree2PointLogOdd,false);
   }  
   
   return true;
   
 }
 
-double SonarOcTree::compareTrees(const SonarOcTree& tree, base::Vector3d& treePosition, base::Quaterniond& treeOrientation)
+double SonarOcTree::compareTrees(const SonarOcTree& tree, base::Vector3d& tree_position, base::Quaterniond& tree_orientatation)
 {
     double kld_sum = 0;
     for (OcTree::leaf_iterator it = tree.begin_leafs(), end = tree.end_leafs(); it != end; ++it)
     {
-	point3d treePoint = it.getCoordinate();
+	point3d tree_point = it.getCoordinate();
 	
-	pose6d treeTransfomOctomap = octomath::Pose6D(eigen2octoVector(treePosition),
-							     eigen3octoQuaternion(treeOrientation)); 
+	pose6d tree_transfom = octomath::Pose6D(eigen2octoVector(tree_position),
+							     eigen3octoQuaternion(tree_orientatation)); 
 	
 	
-	point3d root2Tree = treeTransfomOctomap.transform(treePoint);
+	point3d root2Tree = tree_transfom.transform(tree_point);
 
-	OcTreeNode* rootNode = this->search(root2Tree);
-	if(!rootNode)
+	OcTreeNode* root_node = this->search(root2Tree);
+	if(!root_node)
 	    continue;
 	
-	double rootPointProb = rootNode->getOccupancy();
-	double treePointProb = it->getOccupancy();
+	double root_point_prob = root_node->getOccupancy();
+	double tree_point_prob = it->getOccupancy();
 	
 	double kld = 0;
-	if (treePointProb < 0.0001)
-	    kld =log((1-rootPointProb)/(1-treePointProb))*(1-rootPointProb);
-	else if (treePointProb > 0.9999)
-	    kld =log(rootPointProb/treePointProb)*rootPointProb;
+	if (tree_point_prob < 0.0001)
+	    kld =log((1-root_point_prob)/(1-tree_point_prob))*(1-root_point_prob);
+	else if (tree_point_prob > 0.9999)
+	    kld =log(root_point_prob/tree_point_prob)*root_point_prob;
 	else
-	    kld +=log(rootPointProb/treePointProb)*rootPointProb + log((1-rootPointProb)/(1-treePointProb))*(1-rootPointProb);
+	    kld +=log(root_point_prob/tree_point_prob)*root_point_prob + log((1-root_point_prob)/(1-tree_point_prob))*(1-root_point_prob);
 
 	kld_sum+=kld;
     }
@@ -392,5 +394,33 @@ double SonarOcTree::compareTrees(const SonarOcTree& tree, base::Vector3d& treePo
 	throw std::logic_error("found NaN when comparing octomaps");
     return kld_sum;
 }
+
+double octomap::SonarOcTree::evaluateSonarBeam(const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam)
+{
+  double weight = 0;
+  
+           
+  std::vector<uint8_t> projected_beam;
+  
+  
+  for(int current_bin = 0; current_bin<sonar_beam.beam.size(); current_bin++)
+  {
+      //funcao do elael recebendo current_bin, sonar_beam.bearing, rbs, tlvz o valor do bin e o ponteiro para minha funcao 
+  }    
+  
+  double projected_intensity = sum_alpha_occ/sum_alpha2;
+  
+  projected_intensity = floor(projected_intensity);
+  
+  projected_beam.push_back(projected_intensity);
+  
+  
+ 
+  return weight;
+  
+  
+}
+
+
 
 
