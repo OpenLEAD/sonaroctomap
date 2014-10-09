@@ -4,7 +4,6 @@
 #include <octomap/math/Vector3.h>
 #include <octomap/math/Quaternion.h>
 #include <octomap/math/Pose6D.h>
-#include "SonarOcTree.hpp"
 
 using namespace octomap;
 
