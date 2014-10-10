@@ -71,7 +71,7 @@ const double ThetaMin = -M_PI*315/1800;
 const double ThetaMax = M_PI*290/1800;
 
 
-bool SonarOcTree::CreateBin(int bin, double bearing, float offset, double alpha, double beta  ){
+bool SonarOcTree::createBin(int bin, double bearing, float offset, double alpha, double beta  ){
   base::samples::RigidBodyState sonar_state;
   base::Pose sonar_pose;
   //base::Matrix3d Pantilt;
@@ -87,7 +87,7 @@ bool SonarOcTree::CreateBin(int bin, double bearing, float offset, double alpha,
   return this->BinShape( bin, 0, &octomap::SonarOcTree::updater, sonar_state );
 }
 
-bool SonarOcTree::CreateBin( int bin, double bearing, float poweroffset, base::samples::RigidBodyState sonar_state ){
+bool SonarOcTree::createBin( int bin, double bearing, float poweroffset, base::samples::RigidBodyState sonar_state ){
   
   if(poweroffset<value_trh)
     logitprob = &logit_empty_prob;
@@ -97,7 +97,7 @@ bool SonarOcTree::CreateBin( int bin, double bearing, float poweroffset, base::s
   BinShape( bin,  bearing,  &octomap::SonarOcTree::updater,  sonar_state );
 }
 
-bool SonarOcTree::BinShape( int bin, double bearing,  pUpdateMethod fnode, base::samples::RigidBodyState sonar_state ){
+bool SonarOcTree::binShape( int bin, double bearing,  pUpdateMethod fnode, base::samples::RigidBodyState sonar_state ){
     
   sonar_state.orientation = sonar_state.orientation * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
   

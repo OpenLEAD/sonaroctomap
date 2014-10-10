@@ -90,11 +90,12 @@ public:
 	 const point3d& end, double maxrange, float log_odd_update,
 	 bool lazy_eval);*/
 
-	bool CreateBin( int bin, double bearing, float poweroffset, base::samples::RigidBodyState sonar_state );
+	bool createBin( int bin, double bearing, float poweroffset, base::samples::RigidBodyState sonar_state );
+        bool createBin(int bin, double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
-	bool BinShape( int bin, double bearing,   pUpdateMethod fnode, base::samples::RigidBodyState sonar_state );
+
+	bool binShape( int bin, double bearing,   pUpdateMethod fnode, base::samples::RigidBodyState sonar_state );
 	
-	bool CreateBin(int bin, double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
 	bool insertBinsRay(std::vector<uint8_t> beam_vector,
 			octomath::Vector3 origin, octomath::Vector3 ray_direction,
