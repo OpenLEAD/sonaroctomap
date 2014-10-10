@@ -195,10 +195,14 @@ bool SonarOcTree::CreateBin( int bin, double bearing,  pUpdateMethod fnode, base
       continue;
     
 //     normalizer+=((double*)matvar->data)[row + Nrow*col];
-  
-    if((actualnode = this->search(stepkey)) == NULL)
-      this->updateNode(stepkey, (float) 0 );
     
+    if((actualnode = this->search(stepkey)) == NULL){
+      this->updateNode(stepkey, (float) 0 );
+      actualnode = this->search(stepkey);
+      
+    }
+  //  else
+  
     (this->*fnode)(actualnode,&(((double*)matvar->data)[row + Nrow*col]));
     
      // actualnode->addValue((float) (*logitprob * ((double*)matvar->data)[row + Nrow*col]/30.0) );      //logodds(((double*)matvar->data)[row + Nrow*col]));
@@ -230,8 +234,15 @@ bool SonarOcTree::CreateBin( int bin, double bearing,  pUpdateMethod fnode, base
 }
 
 inline void SonarOcTree::updater(OcTreeNode* actualnode, double* gain){
-  
+  std::cout << "updater" << std::endl;
+  float k = (float) ((*logitprob) * (*gain) /30.0);
+  std::cout << "floated" << k << std::endl;
+  if(actualnode==NULL)
+    std::cout << "NUUUUUL" << std::endl;
+  else
+    std::cout << "FUUULLL" << actualnode << std::endl;
   actualnode->addValue((float) ((*logitprob) * (*gain) /30.0) );
+  std::cout << "updated" << std::endl;
   
 }
 

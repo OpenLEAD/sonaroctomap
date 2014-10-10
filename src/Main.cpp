@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
 	
 	int p;
 	
-	for(int voltas=0;voltas<20;voltas++){
+	for(int voltas=0;voltas<4;voltas++){
 	
 	  struct timeval start, end;
 	  gettimeofday(&start, NULL);
@@ -163,8 +163,8 @@ int main(int argc, char** argv) {
 	std::stringstream ss;
 	ss << voltas;
 	  
-	sonarCube1->write("treeExtraRandRPProgressiveNewM"+ss.str()+".ot");
-        std::cout << "treeExtraRandRPProgressiveNewM"+ss.str()+".ot"<< " written" << std::endl;
+	sonarCube1->write("treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"); //treeExtraRandRPProgressiveNewM
+        std::cout << "treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"<< " written" << std::endl;
 	  
 	}
 	
