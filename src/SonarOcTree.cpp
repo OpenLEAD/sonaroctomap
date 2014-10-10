@@ -84,7 +84,7 @@ bool SonarOcTree::createBin(int bin, double bearing, float offset, double alpha,
   
   sonar_state.setPose(sonar_pose);
 	    
-  return this->BinShape( bin, 0, &octomap::SonarOcTree::updater, sonar_state );
+  return this->binShape( bin, 0, &octomap::SonarOcTree::updater, sonar_state );
 }
 
 bool SonarOcTree::createBin( int bin, double bearing, float poweroffset, base::samples::RigidBodyState sonar_state ){
@@ -94,7 +94,7 @@ bool SonarOcTree::createBin( int bin, double bearing, float poweroffset, base::s
   else
     logitprob = &logit_full_prob;
     
-  BinShape( bin,  bearing,  &octomap::SonarOcTree::updater,  sonar_state );
+  binShape( bin,  bearing,  &octomap::SonarOcTree::updater,  sonar_state );
 }
 
 bool SonarOcTree::binShape( int bin, double bearing,  pUpdateMethod fnode, base::samples::RigidBodyState sonar_state ){
@@ -299,7 +299,7 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
     
     float poweroffset = beam.beam[i]*80.0/255.0;
     
-    this->CreateBin( i, beam.bearing.rad, poweroffset, sonar_state );
+    this->createBin( i, beam.bearing.rad, poweroffset, sonar_state );
     
   }
   
