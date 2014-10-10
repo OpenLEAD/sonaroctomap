@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
 	
 	int p;
 	
-	for(int voltas=0;voltas<20;voltas++){
+	for(int voltas=0;voltas<4;voltas++){
 	
 	  struct timeval start, end;
 	  gettimeofday(&start, NULL);
@@ -146,9 +146,9 @@ int main(int argc, char** argv) {
 	  {
 	  #pragma omp for schedule(dynamic)
 	  for(int bin=0;bin<(40+5*p);bin++)
-	    sonarCube1->CreateBin(bin,base::Angle::deg2Rad(180),&octomap::SonarOcTree::updater,sonar_state);
+	    sonarCube1->CreateBin(bin,base::Angle::deg2Rad(180),15,sonar_state);
 	  }
-	  sonarCube1->CreateBin(40+5*p,base::Angle::deg2Rad(180),&octomap::SonarOcTree::updater,sonar_state);
+	  sonarCube1->CreateBin(40+5*p,base::Angle::deg2Rad(180),32,sonar_state);
 	  
 	  
 	  gettimeofday(&end, NULL);
@@ -163,8 +163,8 @@ int main(int argc, char** argv) {
 	std::stringstream ss;
 	ss << voltas;
 	  
-	sonarCube1->write("treeExtraRandRPProgressiveNewM"+ss.str()+".ot");
-        std::cout << "treeExtraRandRPProgressiveNewM"+ss.str()+".ot"<< " written" << std::endl;
+	sonarCube1->write("treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"); //treeExtraRandRPProgressiveNewM
+        std::cout << "treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"<< " written" << std::endl;
 	  
 	}
 	

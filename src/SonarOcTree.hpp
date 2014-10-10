@@ -16,7 +16,7 @@ namespace octomap {
 
 class SonarOcTree;
   
-typedef void (SonarOcTree::*pUpdateMethod)(OcTreeNode*,double*);
+typedef void (SonarOcTree::*pUpdateMethod)(const octomap::OcTreeKey&,const double& );
   
 
 /** 
@@ -37,7 +37,7 @@ private:
 	const float * logitprob;
 
 public:
-	void updater(OcTreeNode* actualnode, double* gain);
+	void updater(const octomap::OcTreeKey& stepkey, const double&  gain);
 
 	/// Default constructor, sets resolution of leafs
 	SonarOcTree(double resolution,std::string filename = "ResizeRR.mat", std::string varname = "ResizeRR") :
@@ -90,7 +90,9 @@ public:
 	 const point3d& end, double maxrange, float log_odd_update,
 	 bool lazy_eval);*/
 
-	bool CreateBin( int bin, double bearing,   pUpdateMethod fnode, base::samples::RigidBodyState sonar_state );
+	bool CreateBin( int bin, double bearing, float poweroffset, base::samples::RigidBodyState sonar_state );
+
+	bool BinShape( int bin, double bearing,   pUpdateMethod fnode, base::samples::RigidBodyState sonar_state );
 	
 	bool CreateBin(int bin, double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
