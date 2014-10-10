@@ -7,6 +7,7 @@
 
 using namespace octomap;
 
+
 const double value_trh = 30;
 const double empty_prob = 0.1;
 const double full_prob = 0.8;
@@ -83,10 +84,10 @@ bool SonarOcTree::CreateBin(int bin, double bearing, float offset, double alpha,
   
   sonar_state.setPose(sonar_pose);
 	    
-  return this->CreateBin( bin, 0, &temp, sonar_state );
+  return this->CreateBin( bin, 0, &octomap::SonarOcTree::updater, sonar_state );
 }
 
-bool SonarOcTree::CreateBin( int bin, double bearing,   void (*fnode)(OcTreeNode*,double*), base::samples::RigidBodyState sonar_state ){
+bool SonarOcTree::CreateBin( int bin, double bearing,  pUpdateMethod fnode, base::samples::RigidBodyState sonar_state ){
     
   sonar_state.orientation = sonar_state.orientation * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
   
@@ -155,16 +156,11 @@ bool SonarOcTree::CreateBin( int bin, double bearing,   void (*fnode)(OcTreeNode
   /* filling octomap & angle to matrix index convertions */
 
   const double kstep = 1800/M_PI;
-  Eigen::Affine3d PantiltInverse = sonar_state.getTransform().inverse();
-  
-
-
-
-//   double normalizer=0;
-  
+  Eigen::Affine3d PantiltInverse = sonar_state.getTransform().inverse();  
   
   
 /*  
+ * double normalizer=0;
   struct timeval start, end;
   gettimeofday(&start, NULL);*/
 
@@ -202,12 +198,12 @@ bool SonarOcTree::CreateBin( int bin, double bearing,   void (*fnode)(OcTreeNode
   
     if((actualnode = this->search(stepkey)) == NULL)
       this->updateNode(stepkey, (float) 0 );
-    else
-      actualnode->addValue((float) (*logitprob * ((double*)matvar->data)[row + Nrow*col]/30.0) );      //logodds(((double*)matvar->data)[row + Nrow*col]));
+    
+    (this->*fnode)(actualnode,&(((double*)matvar->data)[row + Nrow*col]));
+    
+     // actualnode->addValue((float) (*logitprob * ((double*)matvar->data)[row + Nrow*col]/30.0) );      //logodds(((double*)matvar->data)[row + Nrow*col]));
     //this->updateNode(stepkey, (float) (*logitprob + (((double*)matvar->data)[row + Nrow*col]/30.0 - 1)*2.2));
   }
-  
-  
     
   /*  
   std::cout<< "Normalizing" << std::endl;
@@ -219,7 +215,6 @@ bool SonarOcTree::CreateBin( int bin, double bearing,   void (*fnode)(OcTreeNode
   
   */
   
-  
 /*  
   gettimeofday(&end, NULL);
   double voxels = (endkey[0] - startkey[0])*(endkey[1] - startkey[1])*(endkey[2] - startkey[2]);
@@ -230,10 +225,16 @@ bool SonarOcTree::CreateBin( int bin, double bearing,   void (*fnode)(OcTreeNode
   std::cout<< voxels/useconds << " Mega voxels per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
   std::cout<< "DONE" << std::endl << std::endl;
   */
-  
-  
+   
   return true;
 }
+
+inline void SonarOcTree::updater(OcTreeNode* actualnode, double* gain){
+  
+  actualnode->addValue((float) ((*logitprob) * (*gain) /30.0) );
+  
+}
+
 
 bool SonarOcTree::insertBinsRay(std::vector<uint8_t> beam_vector,
 		octomath::Vector3 origin, octomath::Vector3 ray_direction,
@@ -290,7 +291,7 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
     else
       logitprob = &logit_full_prob;
     
-    this->CreateBin( i, beam.bearing.rad, 0, sonar_state );
+    this->CreateBin( i, beam.bearing.rad, &octomap::SonarOcTree::updater, sonar_state );
     
   }
   
@@ -423,7 +424,7 @@ void SonarOcTree::calculateIntensity(OcTreeNode* node, double* decay)
 {
   double occupancy = node->getOccupancy();
   sum_decay_occ += *decay*occupancy;
-  sum_decay2 += *decay*(*decay);
+  sum_decay2 += (*decay)*(*decay);
 
 }
 

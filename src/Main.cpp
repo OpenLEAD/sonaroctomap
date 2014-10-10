@@ -146,9 +146,9 @@ int main(int argc, char** argv) {
 	  {
 	  #pragma omp for schedule(dynamic)
 	  for(int bin=0;bin<(40+5*p);bin++)
-	    sonarCube1->CreateBin(bin,base::Angle::deg2Rad(180),&octomap::temp,sonar_state);
+	    sonarCube1->CreateBin(bin,base::Angle::deg2Rad(180),&octomap::SonarOcTree::updater,sonar_state);
 	  }
-	  sonarCube1->CreateBin(40+5*p,base::Angle::deg2Rad(180),&octomap::temp,sonar_state);
+	  sonarCube1->CreateBin(40+5*p,base::Angle::deg2Rad(180),&octomap::SonarOcTree::updater,sonar_state);
 	  
 	  
 	  gettimeofday(&end, NULL);
