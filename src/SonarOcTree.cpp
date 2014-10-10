@@ -395,26 +395,26 @@ double SonarOcTree::compareTrees(const SonarOcTree& tree, base::Vector3d& tree_p
 
 double octomap::SonarOcTree::evaluateSonarBeam(const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam)
 {
+  double sqr_distance = 0;
   double weight = 0;
   sum_decay_occ = 0;
-  sum_decay2 = 0;
-  
-           
+  sum_decay2 = 0;  
   std::vector<uint8_t> projected_beam;
   
   
   for(int current_bin = 0; current_bin<sonar_beam.beam.size(); current_bin++)
   {
       //funcao do elael recebendo current_bin, sonar_beam.bearing, rbs, tlvz o valor do bin e o ponteiro para minha funcao 
+    double projected_intensity = sum_decay_occ/sum_decay2;
+    projected_intensity = floor(projected_intensity);
+    double diff = sonar_beam.beam[current_bin] - projected_intensity;
+    sqr_distance += diff*diff;
+    projected_beam.push_back(projected_intensity);
   }    
   
-  double projected_intensity = sum_decay_occ/sum_decay2;
+  double threshold = 0.5;
   
-  projected_intensity = floor(projected_intensity);
-  
-  projected_beam.push_back(projected_intensity);
-  
-  
+  weight = exp(-threshold*sqr_distance);  
  
   return weight;
 }
