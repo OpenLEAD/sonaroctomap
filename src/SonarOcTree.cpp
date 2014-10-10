@@ -84,10 +84,20 @@ bool SonarOcTree::CreateBin(int bin, double bearing, float offset, double alpha,
   
   sonar_state.setPose(sonar_pose);
 	    
-  return this->CreateBin( bin, 0, &octomap::SonarOcTree::updater, sonar_state );
+  return this->BinShape( bin, 0, &octomap::SonarOcTree::updater, sonar_state );
 }
 
-bool SonarOcTree::CreateBin( int bin, double bearing,  pUpdateMethod fnode, base::samples::RigidBodyState sonar_state ){
+bool SonarOcTree::CreateBin( int bin, double bearing, float poweroffset, base::samples::RigidBodyState sonar_state ){
+  
+  if(poweroffset<value_trh)
+    logitprob = &logit_empty_prob;
+  else
+    logitprob = &logit_full_prob;
+    
+  BinShape( bin,  bearing,  &octomap::SonarOcTree::updater,  sonar_state );
+}
+
+bool SonarOcTree::BinShape( int bin, double bearing,  pUpdateMethod fnode, base::samples::RigidBodyState sonar_state ){
     
   sonar_state.orientation = sonar_state.orientation * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
   
@@ -163,8 +173,6 @@ bool SonarOcTree::CreateBin( int bin, double bearing,  pUpdateMethod fnode, base
  * double normalizer=0;
   struct timeval start, end;
   gettimeofday(&start, NULL);*/
-
-  OcTreeNode* actualnode;
   
   for(int stepX=startkey[0]; stepX<=endkey[0]; stepX++)
   for(int stepY=startkey[1]; stepY<=endkey[1]; stepY++)
@@ -195,15 +203,9 @@ bool SonarOcTree::CreateBin( int bin, double bearing,  pUpdateMethod fnode, base
       continue;
     
 //     normalizer+=((double*)matvar->data)[row + Nrow*col];
-    
-    if((actualnode = this->search(stepkey)) == NULL){
-      this->updateNode(stepkey, (float) 0 );
-      actualnode = this->search(stepkey);
-      
-    }
   //  else
   
-    (this->*fnode)(actualnode,&(((double*)matvar->data)[row + Nrow*col]));
+    (this->*fnode)(stepkey,(((double*)matvar->data)[row + Nrow*col]));
     
      // actualnode->addValue((float) (*logitprob * ((double*)matvar->data)[row + Nrow*col]/30.0) );      //logodds(((double*)matvar->data)[row + Nrow*col]));
     //this->updateNode(stepkey, (float) (*logitprob + (((double*)matvar->data)[row + Nrow*col]/30.0 - 1)*2.2));
@@ -233,17 +235,17 @@ bool SonarOcTree::CreateBin( int bin, double bearing,  pUpdateMethod fnode, base
   return true;
 }
 
-inline void SonarOcTree::updater(OcTreeNode* actualnode, double* gain){
-  std::cout << "updater" << std::endl;
-  float k = (float) ((*logitprob) * (*gain) /30.0);
-  std::cout << "floated" << k << std::endl;
-  if(actualnode==NULL)
-    std::cout << "NUUUUUL" << std::endl;
-  else
-    std::cout << "FUUULLL" << actualnode << std::endl;
-  actualnode->addValue((float) ((*logitprob) * (*gain) /30.0) );
-  std::cout << "updated" << std::endl;
-  
+inline void SonarOcTree::updater(const octomap::OcTreeKey& stepkey,const double& gain){
+
+  OcTreeNode* actualnode;
+    
+    if((actualnode = this->search(stepkey)) == NULL){
+      this->updateNode(stepkey, (float) 0 );
+      actualnode = this->search(stepkey);
+      
+    }
+    
+  actualnode->addValue((float) ((*logitprob) * gain /30.0) );
 }
 
 
@@ -296,13 +298,8 @@ bool SonarOcTree::insertRealBeam(const base::samples::SonarBeam& beam,
 //       continue;
     
     float poweroffset = beam.beam[i]*80.0/255.0;
-  
-    if(poweroffset<value_trh)
-      logitprob = &logit_empty_prob;
-    else
-      logitprob = &logit_full_prob;
     
-    this->CreateBin( i, beam.bearing.rad, &octomap::SonarOcTree::updater, sonar_state );
+    this->CreateBin( i, beam.bearing.rad, poweroffset, sonar_state );
     
   }
   
