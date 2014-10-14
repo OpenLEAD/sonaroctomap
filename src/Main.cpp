@@ -9,8 +9,6 @@
 #include <octomap_wrapper/OctomapWrapper.hpp>
 #include <octomap_wrapper/Conversion.hpp>
 
-
-
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
@@ -106,67 +104,127 @@ void cubeTreeCreator(octomap::SonarOcTree &tree,octomap::point3d origin, double 
     }
 }
 
+void evaluateBeamTester()
+{    octomap::SonarOcTree* tree = new octomap::SonarOcTree(0.2);
+     octomap::OcTreeKey startkey = tree->coordToKey(-20,10,-20);
+     octomap::OcTreeKey endkey = tree->coordToKey(20,11,20);	
+     for(int stepX=startkey[0]; stepX<=endkey[0]; stepX++)
+	{
+               for(int stepY=startkey[1]; stepY<=endkey[1]; stepY++)
+	       {
+	           for(int stepZ=startkey[2]; stepZ<=endkey[2]; stepZ++)
+		   {
+		        octomap::OcTreeKey stepkey = octomap::OcTreeKey(stepX,stepY,stepZ);
+			tree->updateNode(stepkey,octomap::logodds(0.9),false);
+		   }
+	       }
+	}
+
+     octomap::OcTreeKey startkey2 = tree->coordToKey(20,11,-20);
+     octomap::OcTreeKey endkey2 = tree->coordToKey(21,30,20);	
+     for(int stepX=startkey2[0]; stepX<=endkey2[0]; stepX++)
+	{
+               for(int stepY=startkey2[1]; stepY<=endkey2[1]; stepY++)
+	       {
+	           for(int stepZ=startkey2[2]; stepZ<=endkey2[2]; stepZ++)
+		   {
+		        octomap::OcTreeKey stepkey2 = octomap::OcTreeKey(stepX,stepY,stepZ);
+			tree->updateNode(stepkey2,octomap::logodds(0.9),false);
+		   }
+	       }
+	}	
+	
+    std::cout << "map created" << std::endl;
+    
+    base::samples::RigidBodyState rbs;
+    rbs.initUnknown();
+    base::samples::SonarBeam* sonar_beam =  new base::samples::SonarBeam();
+    sonar_beam->bearing.rad = 0.785398163;
+    sonar_beam->beam = std::vector<u_int8_t>(150);
+    sonar_beam->sampling_interval = 1;
+    sonar_beam->speed_of_sound = 0.2;
+
+   std::vector<u_int8_t> projected_beam(150);
+    
+    tree->evaluateSonarBeam(rbs,*sonar_beam, projected_beam);
+    
+    sonar_beam->beam.swap(projected_beam);
+    
+    tree->insertRealBeam(*sonar_beam,rbs);
+    
+    std::cout<< "beam inserted" << std::endl;
+    
+    tree->write("cornerProj45.ot");
+    
+    std::cout << "tree saved" << std::endl;
+    
+    delete tree;
+  
+}
+
+
 int main(int argc, char** argv) {
   
-	typedef boost::mt19937                     ENG;    // Mersenne Twister
-	typedef boost::normal_distribution<double> DIST;   // Normal Distribution
-	typedef boost::variate_generator<ENG,DIST> GEN;    // Variate generator
-  
-	ENG  eng;
-	DIST dist(0,0.2);
-	GEN  gen(eng,dist);
-	
-	std::srand (std::time(NULL));
-
-	
-        
-	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.2,"ResizeRR.mat","ResizeRR");
-	base::samples::RigidBodyState sonar_state;
-	base::Pose sonar_pose;
-	sonar_pose.orientation.Identity();
-	sonar_state.setPose(sonar_pose);
-	
-	int p;
-	
-	for(int voltas=0;voltas<4;voltas++){
-	
-	  struct timeval start, end;
-	  gettimeofday(&start, NULL);
-	  
-	for(int i=voltas*10;i<10*(voltas+1);i++){
-	  
-  
-	  sonar_state.orientation = Eigen::AngleAxisd(rand()%360, Eigen::MatrixBase<base::Vector3d>::UnitZ()) * Eigen::AngleAxisd(base::Angle::deg2Rad(rand()%360), Eigen::MatrixBase<base::Vector3d>::UnitY());
-	  
-	  sonar_state.position = sonar_state.orientation.toRotationMatrix() *base::Position(10+(p=rand()%5)+gen(),0,0);
-	  
-	  //std::cout << i;	
-	  
-	  #pragma omp parallel num_threads(6)
-	  {
-	  #pragma omp for schedule(dynamic)
-	  for(int bin=0;bin<(40+5*p);bin++)
-	    sonarCube1->createBin(bin,base::Angle::deg2Rad(180),15,sonar_state);
-	  }
-	  sonarCube1->createBin(40+5*p,base::Angle::deg2Rad(180),32,sonar_state);
-	  
-	  
-	  gettimeofday(&end, NULL);
-	  unsigned long long useconds =end.tv_sec - start.tv_sec;
-	  useconds *= 1000000;
-	  useconds +=  end.tv_usec - start.tv_usec;
-	  
-	  std::cout<< (end.tv_sec - start.tv_sec) << "; "<< std::flush;
-
-	  //std::cout<< " - " << ((double) (i+1)*1000000)/useconds << " beams per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
-	}
-	std::stringstream ss;
-	ss << voltas;
-	  
-	sonarCube1->write("treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"); //treeExtraRandRPProgressiveNewM
-        std::cout << "treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"<< " written" << std::endl;
-	  
-	}
+        evaluateBeamTester();
+// 	typedef boost::mt19937                     ENG;    // Mersenne Twister
+// 	typedef boost::normal_distribution<double> DIST;   // Normal Distribution
+// 	typedef boost::variate_generator<ENG,DIST> GEN;    // Variate generator
+//   
+// 	ENG  eng;
+// 	DIST dist(0,0.2);
+// 	GEN  gen(eng,dist);
+// 	
+// 	std::srand (std::time(NULL));
+// 
+// 	
+//         
+// 	octomap::SonarOcTree* sonarCube1 = new octomap::SonarOcTree(0.2,"ResizeRR.mat","ResizeRR");
+// 	base::samples::RigidBodyState sonar_state;
+// 	base::Pose sonar_pose;
+// 	sonar_pose.orientation.Identity();
+// 	sonar_state.setPose(sonar_pose);
+// 	
+// 	int p;
+// 	
+// 	for(int voltas=0;voltas<4;voltas++){
+// 	
+// 	  struct timeval start, end;
+// 	  gettimeofday(&start, NULL);
+// 	  
+// 	for(int i=voltas*10;i<10*(voltas+1);i++){
+// 	  
+//   
+// 	  sonar_state.orientation = Eigen::AngleAxisd(rand()%360, Eigen::MatrixBase<base::Vector3d>::UnitZ()) * Eigen::AngleAxisd(base::Angle::deg2Rad(rand()%360), Eigen::MatrixBase<base::Vector3d>::UnitY());
+// 	  
+// 	  sonar_state.position = sonar_state.orientation.toRotationMatrix() *base::Position(10+(p=rand()%5)+gen(),0,0);
+// 	  
+// 	  //std::cout << i;	
+// 	  
+// 	  #pragma omp parallel num_threads(6)
+// 	  {
+// 	  #pragma omp for schedule(dynamic)
+// 	  for(int bin=0;bin<(40+5*p);bin++)
+// 	    sonarCube1->createBin(bin,base::Angle::deg2Rad(180),15,sonar_state);
+// 	  }
+// 	  sonarCube1->createBin(40+5*p,base::Angle::deg2Rad(180),32,sonar_state);
+// 	  
+// 	  
+// 	  gettimeofday(&end, NULL);
+// 	  unsigned long long useconds =end.tv_sec - start.tv_sec;
+// 	  useconds *= 1000000;
+// 	  useconds +=  end.tv_usec - start.tv_usec;
+// 	  
+// 	  std::cout<< (end.tv_sec - start.tv_sec) << "; "<< std::flush;
+// 
+// 	  //std::cout<< " - " << ((double) (i+1)*1000000)/useconds << " beams per second in " << end.tv_sec - start.tv_sec << "s" << std::endl;
+// 	}
+// 	std::stringstream ss;
+// 	ss << voltas;
+// 	  
+// 	sonarCube1->write("treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"); //treeExtraRandRPProgressiveNewM
+//         std::cout << "treeExtraRandRPProgressiveNewMptm"+ss.str()+".ot"<< " written" << std::endl;
+// 	  
+// 	}
 	
 		
 		
@@ -292,12 +350,12 @@ int main(int argc, char** argv) {
 //         result = sonarCube1->search (query);
 //         print_query_info(query, result);
 
-
+/*
         std::cout << std::endl;
 	
 	sonarCube1->write("treeExtra.ot");
 	
- 	return 0;
+ 	return 0;*/
 }
 		
 		

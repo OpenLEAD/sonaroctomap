@@ -32,8 +32,12 @@ class SonarOcTree: public OcTree {
 
 private:
 	//variables to use in the evaluateSonarBeam method
-        double sum_decay_occ;
-	double sum_decay2;
+        double sum_gain_occ;
+	double sum_gain2;
+	
+	double bin_max_occ;
+
+	
 	const float * logitprob;
 
 public:
@@ -115,9 +119,17 @@ public:
 	
 	double compareTrees(const SonarOcTree& tree, base::Vector3d& tree_position, base::Quaterniond& tree_orientation);
 	
-	double evaluateSonarBeam( const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam);
+	double evaluateSonarBeam( const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam, std::vector<uint8_t>& projected_beam);
 	
-	void calculateIntensity(octomap::OcTreeNode* node, double* decay);
+	double evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam, base::samples::RigidBodyState particle_pose,  std::vector<u_int8_t>& projected_beam);
+	
+	double evaluateBinLQ(int current_bin, const base::samples::SonarBeam& sonar_beam, base::samples::RigidBodyState particle_pose,  std::vector<u_int8_t>& projected_beam);
+	
+	void projectIntensityBinary(const octomap::OcTreeKey& key,const double& alpha);
+	
+	void projectIntesityLQ(const octomap::OcTreeKey& key,const double& alpha);
+	
+	
 
 };
 
