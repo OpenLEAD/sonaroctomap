@@ -119,11 +119,11 @@ public:
 	
 	double compareTrees(const SonarOcTree& tree, base::Vector3d& tree_position, base::Quaterniond& tree_orientation);
 	
-	double evaluateSonarBeam( const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam, std::vector<uint8_t>& projected_beam);
+	double evaluateSonarBeam( const Eigen::Affine3d& sonar_pose, const base::samples::SonarBeam& sonar_beam);
 	
-	double evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam, base::samples::RigidBodyState particle_pose,  std::vector<u_int8_t>& projected_beam);
+	double evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam, Eigen::Affine3d& sonar_pose);
 	
-	double evaluateBinLQ(int current_bin, const base::samples::SonarBeam& sonar_beam, base::samples::RigidBodyState particle_pose,  std::vector<u_int8_t>& projected_beam);
+	double evaluateBinLQ(int current_bin, const base::samples::SonarBeam& sonar_beam, Eigen::Affine3d& sonar_pose);
 	
 	void projectIntensityBinary(const octomap::OcTreeKey& key,const double& alpha);
 	

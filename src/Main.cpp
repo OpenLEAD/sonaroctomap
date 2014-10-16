@@ -146,7 +146,7 @@ void evaluateBeamTester()
 
    std::vector<u_int8_t> projected_beam(150);
     
-    tree->evaluateSonarBeam(rbs,*sonar_beam, projected_beam);
+    tree->evaluateSonarBeam(rbs,*sonar_beam);
     
     sonar_beam->beam.swap(projected_beam);
     

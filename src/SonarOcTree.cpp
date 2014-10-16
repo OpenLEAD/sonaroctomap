@@ -407,7 +407,7 @@ double SonarOcTree::compareTrees(const SonarOcTree& tree, base::Vector3d& tree_p
     return kld_sum;
 }
 
-double octomap::SonarOcTree::evaluateSonarBeam(const base::samples::RigidBodyState& particle_pose, const base::samples::SonarBeam& sonar_beam, std::vector<uint8_t>& projected_beam)
+double octomap::SonarOcTree::evaluateSonarBeam(const Eigen::Affine3d& particle_pose, const base::samples::SonarBeam& sonar_beam)
 {
 
   double sqr_distance = 0;
@@ -415,7 +415,7 @@ double octomap::SonarOcTree::evaluateSonarBeam(const base::samples::RigidBodySta
   for(int current_bin = 0; current_bin<sonar_beam.beam.size(); current_bin++)
   {
     
-    double diff = evaluateBinBinary(current_bin,sonar_beam,particle_pose,projected_beam);
+    double diff = evaluateBinBinary(current_bin,sonar_beam,particle_pose);
     
     sqr_distance += diff;  //*diff;
 
@@ -466,20 +466,18 @@ void SonarOcTree::projectIntesityLQ(const octomap::OcTreeKey& key,const double& 
   }
 }
 
-double SonarOcTree::evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam, base::samples::RigidBodyState particle_pose, std::vector<u_int8_t>& projected_beam )
+double SonarOcTree::evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam, Eigen::Affine3d& sonar_pose )
 {
   /*Binary approach. When a threshold is reached, it is considered as a "hit".
   * It is projected a beam in order to visualize how close the real and projected beam are
   * The distance is set as 0 for matching hits and 1 for unmacthing ones */
     bin_max_occ =0;
-    binShape( current_bin, sonar_beam.bearing.getRad(), &octomap::SonarOcTree::projectIntensityBinary, particle_pose );
+    binShape( current_bin, sonar_beam.bearing.getRad(), &octomap::SonarOcTree::projectIntensityBinary, sonar_pose );
     double projected_intensity =0;
     
     if(bin_max_occ>hit_threshold){
     projected_intensity= 110;
     }
-    
-   projected_beam[current_bin] = (u_int8_t)projected_intensity;
     
     double diff = 0;
     if((sonar_beam.beam[current_bin]>=hit_threshold)^(projected_intensity>0))
@@ -490,18 +488,18 @@ double SonarOcTree::evaluateBinBinary(int current_bin, const base::samples::Sona
 }
 
 
-double SonarOcTree::evaluateBinLQ(int current_bin, const base::samples::SonarBeam& sonar_beam, base::samples::RigidBodyState particle_pose, std::vector< u_int8_t >& projected_beam)
+double SonarOcTree::evaluateBinLQ(int current_bin, const base::samples::SonarBeam& sonar_beam, Eigen::Affine3d& sonar_pose)
 {
   sum_gain_occ = 0;
   sum_gain2 = 0;  
 
-  binShape( current_bin, sonar_beam.bearing.getRad(), &octomap::SonarOcTree::projectIntesityLQ, particle_pose );
+  binShape( current_bin, sonar_beam.bearing.getRad(), &octomap::SonarOcTree::projectIntesityLQ, sonar_pose );
   double projected_intensity =0;
         
   if(sum_gain2!=0)
   projected_intensity= sum_gain_occ/sum_gain2;
   projected_intensity = floor(projected_intensity);
-  projected_beam[current_bin] = (u_int8_t)projected_intensity;
+  
   
   double diff = sonar_beam.beam[current_bin] - projected_intensity;
   
