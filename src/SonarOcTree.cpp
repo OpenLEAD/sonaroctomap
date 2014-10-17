@@ -99,12 +99,12 @@ bool SonarOcTree::createBin( int bin, double bearing, float poweroffset, base::s
   else
     logitprob = &logit_full_prob;
     
-  binShape( bin,  bearing,  &octomap::SonarOcTree::updater,  sonar_state );
+  binShape( bin,  bearing,  &octomap::SonarOcTree::updater,  sonar_state.getTransform() );
 }
 
-bool SonarOcTree::binShape( int bin, double bearing,  pUpdateMethod fnode, base::samples::RigidBodyState sonar_state ){
+bool SonarOcTree::binShape( int bin, double bearing,  pUpdateMethod fnode, Eigen::Affine3d sonar_orientation ){
     
-  sonar_state.orientation = sonar_state.orientation * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
+  sonar_orientation = sonar_orientation * Eigen::AngleAxisd(bearing, Eigen::MatrixBase<base::Vector3d>::UnitZ());
   
   base::Vector3d Backcorners[4];
   base::Vector3d Frontcorners[4];
@@ -138,10 +138,10 @@ bool SonarOcTree::binShape( int bin, double bearing,  pUpdateMethod fnode, base:
     philimits[phi_index]);
 
     //from inertial perspective
-    Backcorners[(theta_index << 1) | phi_index] = sonar_state.getTransform() * Backcorners[(theta_index << 1) | phi_index];
+    Backcorners[(theta_index << 1) | phi_index] = sonar_orientation * Backcorners[(theta_index << 1) | phi_index];
     
     
-    Frontcorners[(theta_index << 1) | phi_index] = sonar_state.getTransform() * Frontcorners[(theta_index << 1) | phi_index];
+    Frontcorners[(theta_index << 1) | phi_index] = sonar_orientation * Frontcorners[(theta_index << 1) | phi_index];
     
   }
   
@@ -171,7 +171,7 @@ bool SonarOcTree::binShape( int bin, double bearing,  pUpdateMethod fnode, base:
   /* filling octomap & angle to matrix index convertions */
 
   const double kstep = 1800/M_PI;
-  Eigen::Affine3d PantiltInverse = sonar_state.getTransform().inverse();  
+  Eigen::Affine3d PantiltInverse = sonar_orientation.inverse();  
   
   
 /*  
@@ -466,7 +466,7 @@ void SonarOcTree::projectIntesityLQ(const octomap::OcTreeKey& key,const double& 
   }
 }
 
-double SonarOcTree::evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam, Eigen::Affine3d& sonar_pose )
+double SonarOcTree::evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam,const Eigen::Affine3d& sonar_pose )
 {
   /*Binary approach. When a threshold is reached, it is considered as a "hit".
   * It is projected a beam in order to visualize how close the real and projected beam are

@@ -98,7 +98,7 @@ public:
         bool createBin(int bin, double bearing = 0, float offset=0, double alpha = 0, double beta = 0);
 
 
-	bool binShape( int bin, double bearing,   pUpdateMethod fnode, base::samples::RigidBodyState sonar_state );
+	bool binShape( int bin, double bearing,   pUpdateMethod fnode, Eigen::Affine3d sonar_orientation );
 	
 
 	bool insertBinsRay(std::vector<uint8_t> beam_vector,
@@ -121,7 +121,7 @@ public:
 	
 	double evaluateSonarBeam( const Eigen::Affine3d& sonar_pose, const base::samples::SonarBeam& sonar_beam);
 	
-	double evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam, Eigen::Affine3d& sonar_pose);
+	double evaluateBinBinary(int current_bin, const base::samples::SonarBeam& sonar_beam,const Eigen::Affine3d& sonar_pose);
 	
 	double evaluateBinLQ(int current_bin, const base::samples::SonarBeam& sonar_beam, Eigen::Affine3d& sonar_pose);
 	
