@@ -11,6 +11,7 @@
   <depend package="base/types" />
   <depend package="eigen3" />
   <depend package="boost" />
+  <depend package="matio" />
 
  <tags>needs_opt</tags>
 </package>
