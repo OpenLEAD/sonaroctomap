@@ -7,7 +7,7 @@ endif()
 rock_library(sonaroctomap
     SOURCES SonarOcTree.cpp
     HEADERS SonarOcTree.hpp
-    DEPS_PKGCONFIG matio
+    DEPS_PKGCONFIG matio base-lib
     DEPS_CMAKE octomap)
 
 rock_executable(sonaroctomap_bin Main.cpp
